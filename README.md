@@ -1,0 +1,1 @@
+# aws-kinesis-spring-boot-starter
