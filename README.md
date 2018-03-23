@@ -9,7 +9,11 @@
 ## Installation
 Add the following dependency to your project:
 ```
-compile "de.bringmeister:aws-kinesis-spring-boot-starter:0.1.0"
+repositories {
+    ...
+    maven { url 'https://jitpack.io' }
+}
+compile 'com.github.bringmeister:aws-kinesis-spring-boot-starter:v0.0.1'
 ```
 
 ## Configuration
