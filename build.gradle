@@ -21,17 +21,19 @@ buildscript {
     dependencies {
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${versions.kotlin}"
         classpath "org.jetbrains.kotlin:kotlin-allopen:${versions.kotlin}"
+        classpath "org.kt3k.gradle.plugin:coveralls-gradle-plugin:2.8.2"
     }
 }
 
 allprojects {
     repositories(allRepositories)
 }
-
 apply plugin: 'kotlin'
 apply plugin: 'kotlin-spring'
 apply plugin: 'idea'
 apply plugin: 'maven-publish'
+apply plugin: "jacoco"
+apply plugin: "com.github.kt3k.coveralls"
 
 group = 'de.bringmeister'
 version = '0.1.0'
@@ -79,5 +81,12 @@ publishing {
                 classifier "sources"
             }
         }
+    }
+}
+
+jacocoTestReport {
+    reports {
+        xml.enabled = true // coveralls plugin depends on xml format report
+        html.enabled = true
     }
 }
