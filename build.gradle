@@ -1,0 +1,83 @@
+buildscript {
+    ext {
+        versions = [
+                kotlin    : '1.2.30',
+                springBoot: '1.5.8.RELEASE',
+                kinesis   : '1.8.10',
+                awsSdk    : '1.11.280',
+                jackson   : '2.9.2'
+        ]
+    }
+
+    ext["mockito.version"] = "2.13.0"
+
+    ext.allRepositories = {
+        jcenter()
+        mavenCentral()
+    }
+
+    repositories(allRepositories)
+
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${versions.kotlin}"
+        classpath "org.jetbrains.kotlin:kotlin-allopen:${versions.kotlin}"
+    }
+}
+
+allprojects {
+    repositories(allRepositories)
+}
+
+apply plugin: 'kotlin'
+apply plugin: 'kotlin-spring'
+apply plugin: 'idea'
+apply plugin: 'maven-publish'
+
+group = 'de.bringmeister'
+version = '0.1.0'
+sourceCompatibility = 1.8
+
+compileKotlin {
+    kotlinOptions.jvmTarget = "1.8"
+}
+compileTestKotlin {
+    kotlinOptions.jvmTarget = "1.8"
+}
+
+dependencies {
+    compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:${versions.kotlin}"
+    compile "org.jetbrains.kotlin:kotlin-reflect:${versions.kotlin}"
+
+    compile "org.springframework.boot:spring-boot-autoconfigure:${versions.springBoot}"
+    compile "org.springframework.boot:spring-boot-configuration-processor:${versions.springBoot}"
+    compile "com.fasterxml.jackson.module:jackson-module-kotlin:${versions.jackson}"
+
+    compile "com.amazonaws:aws-java-sdk-sts:${versions.awsSdk}"
+    compile "com.amazonaws:amazon-kinesis-client:${versions.kinesis}"
+
+    compile "org.slf4j:slf4j-api:1.7.25"
+    compile "javax.validation:validation-api:2.0.0.Final"
+
+    testCompile "org.hibernate:hibernate-validator:6.0.8.Final"
+    testCompile 'org.springframework.boot:spring-boot-starter-test:1.5.8.RELEASE'
+    testCompile 'commons-logging:commons-logging'
+    testCompile 'com.nhaarman:mockito-kotlin:1.5.0'
+    testCompile 'com.natpryce:hamkrest:1.4.2.2'
+    testCompile 'org.yaml:snakeyaml:1.20'
+}
+
+task sourceJar(type: Jar) {
+    from sourceSets.main.allSource
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            from components.java
+
+            artifact sourceJar {
+                classifier "sources"
+            }
+        }
+    }
+}
