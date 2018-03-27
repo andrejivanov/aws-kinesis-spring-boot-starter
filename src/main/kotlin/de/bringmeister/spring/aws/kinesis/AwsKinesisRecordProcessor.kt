@@ -34,10 +34,13 @@ class AwsKinesisRecordProcessor<T : Event>(private val objectMapper: ObjectMappe
     private fun processRecordsWithRetries(records: List<Record>) {
         for (record in records) {
             var processedSuccessfully = false
+            val recordData = Charset.forName("UTF-8")
+                    .decode(record.data)
+                    .toString()
+
             for (i in 0 until configuration.maxRetries) {
                 try {
-                    processRecord(record)
-
+                    processRecord(recordData)
                     processedSuccessfully = true
                     break
                 } catch (t: Throwable) {
@@ -53,11 +56,10 @@ class AwsKinesisRecordProcessor<T : Event>(private val objectMapper: ObjectMappe
         }
     }
 
-    private fun processRecord(record: Record) {
-        val data = Charset.forName("UTF-8").decode(record.data).toString()
-        log.info("Received Event [{}]", data)
+    private fun processRecord(recordData: String) {
+        log.info("Received Event [{}]", recordData)
 
-        val event = objectMapper.readValue(data, eventClass)
+        val event = objectMapper.readValue(recordData, eventClass)
 
         process(event)
     }
@@ -69,20 +71,24 @@ class AwsKinesisRecordProcessor<T : Event>(private val objectMapper: ObjectMappe
             try {
                 checkpointer.checkpoint()
                 break
+            } catch (e: ThrottlingException) {
+                if (retries == maxRetries - 1) {
+                    log.error("Couldn't store checkpoint after max retries.", e)
+                    break
+                }
+                log.warn("Transient issue during checkpointing - attempt ${retries + 1} of $maxRetries", e)
+            } catch (e: KinesisClientLibDependencyException) {
+                if (retries == maxRetries - 1) {
+                    log.error("Couldn't store checkpoint after max retries.", e)
+                    break
+                }
+                log.warn("Transient issue during checkpointing - attempt ${retries + 1} of $maxRetries", e)
             } catch (se: ShutdownException) {
                 log.info("Application is shutting down. Skipping checkpoint.", se)
                 break
-            } catch (e: ThrottlingException) {
-                if (retries > maxRetries) {
-                    log.error("Checkpoint failed after ${retries + 1} attempts.", e)
-                    break
-                }
-                log.info("Transient issue when checkpointing - attempt ${retries + 1} of $maxRetries", e)
             } catch (e: InvalidStateException) {
                 log.error("Cannot save checkpoint. Please check corresponding DynamoDB table.", e)
                 break
-            } catch (e: KinesisClientLibDependencyException) {
-                log.error("Can't store checkpoint. Backoff and retry.")
             }
 
             backoff()
