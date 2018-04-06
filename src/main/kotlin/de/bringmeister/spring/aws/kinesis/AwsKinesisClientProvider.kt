@@ -12,38 +12,49 @@ import java.util.*
 class AwsKinesisClientProvider(private val consumerClientConfigFactory: ConsumerClientConfigFactory,
                                private val producerClientFactory: ProducerClientFactory,
                                private val kinesisCredentialsProviderFactory: AssumeRoleCredentialsProviderFactory,
-                               private val kinesisProperties: AwsKinesisProperties) {
+                               private val kinesisSettings: AwsKinesisSettings) {
 
-    fun producer(streamName: String) = producerClientFactory.producer(credentials(producerStreamSettings(streamName)))
-    fun consumerConfig(streamName: String) = consumerClientConfigFactory.consumerConfig(streamName, credentials(consumerStreamSettings(streamName)))
+    fun producer(streamName: String): AmazonKinesis {
+        return producerClientFactory.producer(credentials(producerStreamSettings(streamName)))
+    }
 
-    private fun credentials(streamSettings: KinesisStream): AWSCredentialsProvider {
+    fun consumerConfig(streamName: String): KinesisClientLibConfiguration {
+        val consumerSettings = consumerStreamSettings(streamName)
+        return consumerClientConfigFactory.consumerConfig(consumerSettings, credentials(consumerSettings))
+    }
+
+    private fun credentials(streamSettings: StreamSettings): AWSCredentialsProvider {
         return kinesisCredentialsProviderFactory.credentials(roleToAssume(streamSettings))
     }
 
-    private fun producerStreamSettings(streamName: String) = kinesisProperties.producer.first { it.streamName == streamName }
-    private fun consumerStreamSettings(streamName: String) = kinesisProperties.consumer.first { it.streamName == streamName }
+    private fun producerStreamSettings(streamName: String) = kinesisSettings.producer.first { it.streamName == streamName }
+    private fun consumerStreamSettings(streamName: String) = kinesisSettings.consumer.first { it.streamName == streamName }
 
-    private fun roleToAssume(streamProps: KinesisStream) = "arn:aws:iam::${streamProps.awsAccountId}:role/${streamProps.iamRoleToAssume}"
+    private fun roleToAssume(streamSettings: StreamSettings) = "arn:aws:iam::${streamSettings.awsAccountId}:role/${streamSettings.iamRoleToAssume}"
 }
 
 class ConsumerClientConfigFactory(private val credentialsProvider: AWSCredentialsProvider,
-                                  private val kinesisProperties: AwsKinesisProperties) {
+                                  private val kinesisSettings: AwsKinesisSettings) {
 
-    fun consumerConfig(streamName: String, kinesisCredentials: AWSCredentialsProvider) = clientConfiguration(streamName, kinesisCredentials)
-            .withInitialPositionInStream(TRIM_HORIZON)
-            .withKinesisEndpoint(kinesisProperties.kinesisUrl)
-            .withDynamoDBEndpoint(kinesisProperties.dynamodbUrl)
-            .withMetricsLevel(kinesisProperties.metricsLevel)
+    fun consumerConfig(consumerSettings: ConsumerSettings, kinesisCredentials: AWSCredentialsProvider): KinesisClientLibConfiguration {
+        return clientConfiguration(consumerSettings.streamName, kinesisCredentials)
+                .withInitialPositionInStream(TRIM_HORIZON)
+                .withKinesisEndpoint(kinesisSettings.kinesisUrl)
+                .withDynamoDBEndpoint(consumerSettings.dynamoDBSettings.url)
+                .withMetricsLevel(consumerSettings.metricsLevel)
+                .withInitialLeaseTableReadCapacity(consumerSettings.dynamoDBSettings.leaseTableReadCapacity)
+                .withInitialLeaseTableWriteCapacity(consumerSettings.dynamoDBSettings.leaseTableWriteCapacity)
+    }
 
-    private fun clientConfiguration(streamName: String, kinesisCredentials: AWSCredentialsProvider) =
-            KinesisClientLibConfiguration("${kinesisProperties.consumerGroup}_$streamName", streamName,
-                    kinesisCredentials, credentialsProvider, credentialsProvider, workerId())
+    private fun clientConfiguration(streamName: String, kinesisCredentials: AWSCredentialsProvider): KinesisClientLibConfiguration {
+        return KinesisClientLibConfiguration("${kinesisSettings.consumerGroup}_$streamName", streamName,
+                kinesisCredentials, credentialsProvider, credentialsProvider, workerId())
+    }
 
     private fun workerId() = InetAddress.getLocalHost().canonicalHostName + ":" + UUID.randomUUID()
 }
 
-class ProducerClientFactory(private val kinesisProperties: AwsKinesisProperties) {
+class ProducerClientFactory(private val kinesisSettings: AwsKinesisSettings) {
 
     fun producer(credentials: AWSCredentialsProvider): AmazonKinesis {
         return AmazonKinesisClientBuilder.standard()
@@ -52,5 +63,5 @@ class ProducerClientFactory(private val kinesisProperties: AwsKinesisProperties)
                 .build()
     }
 
-    private fun producerConfiguration() = AwsClientBuilder.EndpointConfiguration(kinesisProperties.kinesisUrl, kinesisProperties.region)
+    private fun producerConfiguration() = AwsClientBuilder.EndpointConfiguration(kinesisSettings.kinesisUrl, kinesisSettings.region)
 }

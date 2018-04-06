@@ -28,17 +28,24 @@ iam role that allows you to read and/or write to the stream.
 aws:
   kinesis:
     consumerGroup: example-service
+    kinesisUrl: "https://kinesis.eu-central-1.amazonaws.com" #optional
+    region: eu-cental-1 #optional
     consumer:
-      - stream-name: foo-event-stream
-        aws-account-id: "000000000000"
-        iam-role-to-assume: ExampleServiceKinesisConsumer
-      - stream-name: bar-event-stream
-        aws-account-id: "111111111111"
-        iam-role-to-assume: ExampleServiceKinesisConsumer
+      - streamName: foo-event-stream
+        awsAccountId: "000000000000"
+        iamRoleToAssume: ExampleServiceKinesisConsumer
+        metricsLevel: DETAILED #optional
+        dynamoDBSettings:
+            url: "https://dynamodb.eu-central-1.amazonaws.com" #optional
+            leaseTableReadCapacity: 5 #optional
+            leaseTableWriteCapacity: 8 #optional
+      - streamName: bar-event-stream
+        awsAccountId: "111111111111"
+        iamRoleToAssume: ExampleServiceKinesisConsumer
     producer:
-      - stream-name: foo-event-stream
-        aws-account-id: "000000000000"
-        iam-role-to-assume: ExampleServiceKinesisProducer
+      - streamName: foo-event-stream
+        awsAccountId: "000000000000"
+        iamRoleToAssume: ExampleServiceKinesisProducer
 ```
 
 ### 2. Define event model
