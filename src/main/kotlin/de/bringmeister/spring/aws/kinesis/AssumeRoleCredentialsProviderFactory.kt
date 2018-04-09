@@ -10,12 +10,12 @@ interface AssumeRoleCredentialsProviderFactory {
 }
 
 internal class STSAssumeRoleCredentialsProviderFactory(private val credentialsProvider: AWSCredentialsProvider,
-                                                       private val properties: AwsKinesisProperties) : AssumeRoleCredentialsProviderFactory {
+                                                       private val settings: AwsKinesisSettings) : AssumeRoleCredentialsProviderFactory {
 
     override fun credentials(roleToAssume: String) = STSAssumeRoleSessionCredentialsProvider
-            .Builder(roleToAssume, "${properties.consumerGroup}-${UUID.randomUUID()}")
+            .Builder(roleToAssume, "${settings.consumerGroup}-${UUID.randomUUID()}")
             .withStsClient(AWSSecurityTokenServiceClientBuilder.standard()
-                    .withRegion(properties.region)
+                    .withRegion(settings.region)
                     .withCredentials(credentialsProvider)
                     .build())
             .build()

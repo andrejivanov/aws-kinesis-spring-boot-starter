@@ -16,12 +16,12 @@ class AwsKinesisOutboundGatewayTest {
 
     val requestFactory = mock<RequestFactory> { }
     val clientProvider = mock<AwsKinesisClientProvider> { }
-    val properties = mock<AwsKinesisProperties> {
-        val fooStreamProperties = mock<KinesisStream> {
+    val properties = mock<AwsKinesisSettings> {
+        val producerSettings = mock<ProducerSettings> {
             on { streamName }.thenReturn(FooEvent.STREAM_NAME)
         }
 
-        on { producer }.thenReturn(mutableListOf(fooStreamProperties))
+        on { producer }.thenReturn(mutableListOf(producerSettings))
     }
 
     val unit = AwsKinesisOutboundGateway(properties, clientProvider, requestFactory)

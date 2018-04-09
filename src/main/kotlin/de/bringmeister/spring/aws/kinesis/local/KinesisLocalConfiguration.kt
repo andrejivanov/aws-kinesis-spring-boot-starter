@@ -5,7 +5,7 @@ import com.amazonaws.auth.AWSStaticCredentialsProvider
 import com.amazonaws.client.builder.AwsClientBuilder
 import com.amazonaws.services.kinesis.AmazonKinesisClientBuilder
 import de.bringmeister.spring.aws.kinesis.AssumeRoleCredentialsProviderFactory
-import de.bringmeister.spring.aws.kinesis.AwsKinesisProperties
+import de.bringmeister.spring.aws.kinesis.AwsKinesisSettings
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Primary
@@ -32,19 +32,19 @@ class KinesisLocalConfiguration {
     }
 
     @Bean
-    fun streamInitializer(kinesisProperties: AwsKinesisProperties): LocalAwsKinesisStreamInitializer {
+    fun streamInitializer(kinesisSettings: AwsKinesisSettings): LocalAwsKinesisStreamInitializer {
         System.setProperty("com.amazonaws.sdk.disableCbor", "1")
 
         val initializer = LocalAwsKinesisStreamInitializer(AmazonKinesisClientBuilder.standard()
-                .withEndpointConfiguration(AwsClientBuilder.EndpointConfiguration(kinesisProperties.kinesisUrl, "local"))
+                .withEndpointConfiguration(AwsClientBuilder.EndpointConfiguration(kinesisSettings.kinesisUrl, "local"))
                 .withCredentials(credentials())
                 .build())
 
-        kinesisProperties.consumer
+        kinesisSettings.consumer
                 .map { it.streamName }
                 .forEach { it -> initializer.initStream(it) }
 
-        kinesisProperties.producer
+        kinesisSettings.producer
                 .map { it.streamName }
                 .forEach { it -> initializer.initStream(it) }
 

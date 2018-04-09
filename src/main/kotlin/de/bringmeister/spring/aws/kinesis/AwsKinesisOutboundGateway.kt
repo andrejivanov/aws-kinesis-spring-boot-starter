@@ -8,7 +8,7 @@ import java.nio.ByteBuffer
 import java.util.*
 import javax.annotation.PostConstruct
 
-class AwsKinesisOutboundGateway(private val kinesisProperties: AwsKinesisProperties,
+class AwsKinesisOutboundGateway(private val kinesisSettings: AwsKinesisSettings,
                                 private val clientProvider: AwsKinesisClientProvider,
                                 private val requestFactory: RequestFactory) {
 
@@ -17,12 +17,12 @@ class AwsKinesisOutboundGateway(private val kinesisProperties: AwsKinesisPropert
 
     @PostConstruct
     fun initKinesisClients() {
-        kinesisClients = kinesisProperties.producer.map { it.streamName to clientProvider.producer(it.streamName) }.toMap()
+        kinesisClients = kinesisSettings.producer.map { it.streamName to clientProvider.producer(it.streamName) }.toMap()
     }
 
     fun send(event: Event) {
         val request = requestFactory.request(event)
-        val streamProperties = kinesisProperties.producer.first { it.streamName == event.streamName() }
+        val streamProperties = kinesisSettings.producer.first { it.streamName == event.streamName() }
 
         val kinesis = kinesisClients[streamProperties.streamName]
                 ?: throw IllegalStateException("No client found for stream [${streamProperties.streamName}]")

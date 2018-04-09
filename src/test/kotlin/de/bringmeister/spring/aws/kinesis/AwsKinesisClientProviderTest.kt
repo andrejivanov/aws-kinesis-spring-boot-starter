@@ -14,86 +14,124 @@ import org.junit.Test
 
 class AwsKinesisClientProviderTest {
 
-    val properties = mock<AwsKinesisProperties> {
+    val settings = mock<AwsKinesisSettings> {
         on { consumerGroup }.thenReturn("any-consumer-group")
-        on { metricsLevel }.thenReturn("NONE")
         on { kinesisUrl }.thenReturn("http://any-example.com")
-        on { dynamodbUrl }.thenReturn("http://other-example.com")
-    }
-
-    val fooStreamProperties = mock<KinesisStream> {
-        on { streamName }.thenReturn(FooEvent.STREAM_NAME)
     }
 
     val credentialsProvider: AWSCredentialsProvider = mock { }
     val assumeRoleCredentialsProviderFactory: AssumeRoleCredentialsProviderFactory = mock { }
 
     val clientProvider = AwsKinesisClientProvider(
-            consumerClientConfigFactory = ConsumerClientConfigFactory(credentialsProvider, properties),
-            producerClientFactory = ProducerClientFactory(properties),
+            consumerClientConfigFactory = ConsumerClientConfigFactory(credentialsProvider, settings),
+            producerClientFactory = ProducerClientFactory(settings),
             kinesisCredentialsProviderFactory = assumeRoleCredentialsProviderFactory,
-            kinesisProperties = properties)
+            kinesisSettings = settings)
 
     @Before
     fun setUp() {
         whenever(assumeRoleCredentialsProviderFactory.credentials(any())).thenReturn(mock { })
     }
 
+    private fun consumerSettings(streamName: String,
+                                 metricsLevel: String = "NONE",
+                                 iamRole: String = "any-role",
+                                 awsAccountId: String = "any-account",
+                                 dynamoDbUrl: String = "http://dynamo.example.org",
+                                 readCapacity: Int = 1,
+                                 writeCapacity: Int = 1) {
+
+        val dbSettings = mock<DynamoDBSettings> {
+            on { this.url }.thenReturn(dynamoDbUrl)
+            on { this.leaseTableReadCapacity }.thenReturn(readCapacity)
+            on { this.leaseTableWriteCapacity }.thenReturn(writeCapacity)
+        }
+
+        val consumerSettings = mock<ConsumerSettings> {
+            on { this.streamName }.thenReturn(streamName)
+            on { this.dynamoDBSettings }.thenReturn(dbSettings)
+            on { this.awsAccountId }.thenReturn(awsAccountId)
+            on { this.iamRoleToAssume }.thenReturn(iamRole)
+            on { this.metricsLevel }.thenReturn(metricsLevel)
+        }
+        whenever(settings.consumer).thenReturn(mutableListOf(consumerSettings))
+    }
+
+    private fun producerSettings(streamName: String,
+                                 iamRole: String = "any-role",
+                                 awsAccountId: String = "any-account") {
+
+        val producerSettings = mock<ProducerSettings> {
+            on { this.streamName }.thenReturn(streamName)
+            on { this.iamRoleToAssume }.thenReturn(iamRole)
+            on { this.awsAccountId }.thenReturn(awsAccountId)
+        }
+        whenever(settings.producer).thenReturn(mutableListOf(producerSettings))
+    }
+
     @Test
-    fun `consumer config should use stream name from kinesis properties`() {
-        whenever(properties.consumer).thenReturn(mutableListOf(fooStreamProperties))
+    fun `consumer config should use stream name from kinesis settings`() {
+        consumerSettings("foo-stream-name")
 
-        val config = clientProvider.consumerConfig(FooEvent.STREAM_NAME)
+        val config = clientProvider.consumerConfig("foo-stream-name")
 
-        assertThat(config.streamName, equalTo(FooEvent.STREAM_NAME))
+        assertThat(config.streamName, equalTo("foo-stream-name"))
     }
 
     @Test
     fun `consumer config should point to oldest position in stream`() {
-        whenever(properties.consumer).thenReturn(mutableListOf(fooStreamProperties))
+        consumerSettings("any")
 
-        val config = clientProvider.consumerConfig(FooEvent.STREAM_NAME)
+        val config = clientProvider.consumerConfig("any")
 
         assertThat(config.initialPositionInStream, equalTo(InitialPositionInStream.TRIM_HORIZON))
     }
 
     @Test
-    fun `consumer config should use dynamodb and kinesis endpoints defined in kinesis properties`() {
-        whenever(properties.kinesisUrl).thenReturn("https://kinesis-endpoint-url.com")
-        whenever(properties.dynamodbUrl).thenReturn("https://dynamo-endpoint-url.com")
-        whenever(properties.consumer).thenReturn(mutableListOf(fooStreamProperties))
+    fun `consumer config should use kinesis endpoint from settings`() {
+        whenever(settings.kinesisUrl).thenReturn("https://kinesis-endpoint-url.com")
+        consumerSettings("any")
 
-        val config = clientProvider.consumerConfig(FooEvent.STREAM_NAME)
+        val config = clientProvider.consumerConfig("any")
 
-        assertThat(config.kinesisEndpoint, equalTo(properties.kinesisUrl))
-        assertThat(config.dynamoDBEndpoint, equalTo(properties.dynamodbUrl))
+        assertThat(config.kinesisEndpoint, equalTo("https://kinesis-endpoint-url.com"))
     }
 
     @Test
-    fun `consumer config should use metrics level defined in kinesis properties`() {
-        whenever(properties.metricsLevel).thenReturn(MetricsLevel.DETAILED.name)
-        whenever(properties.consumer).thenReturn(mutableListOf(fooStreamProperties))
+    fun `consumer config should use metrics level from settings`() {
+        consumerSettings("any", metricsLevel = "DETAILED")
 
-        val config = clientProvider.consumerConfig(FooEvent.STREAM_NAME)
+        val config = clientProvider.consumerConfig("any")
 
-        assertThat(config.metricsLevel, equalTo(MetricsLevel.fromName(properties.metricsLevel)))
+        assertThat(config.metricsLevel, equalTo(MetricsLevel.fromName("DETAILED")))
+    }
+
+    @Test
+    fun `consumer config should use dynamodb settings`() {
+        consumerSettings("any", dynamoDbUrl = "https://dynamo-endpoint-url.com", readCapacity = 3, writeCapacity = 5)
+
+        val config = clientProvider.consumerConfig("any")
+
+        assertThat(config.dynamoDBEndpoint, equalTo("https://dynamo-endpoint-url.com"))
+        assertThat(config.initialLeaseTableReadCapacity, equalTo(3))
+        assertThat(config.initialLeaseTableWriteCapacity, equalTo(5))
     }
 
     @Test
     fun `should compose consumer application name from stream name and consumer group`() {
-        whenever(properties.consumerGroup).thenReturn("foo-consumer-group")
-        whenever(properties.consumer).thenReturn(mutableListOf(fooStreamProperties))
+        whenever(settings.consumerGroup).thenReturn("foo-consumer-group")
+        consumerSettings("bar-stream-name")
 
-        val config = clientProvider.consumerConfig(FooEvent.STREAM_NAME)
+        val config = clientProvider.consumerConfig("bar-stream-name")
 
-        assertThat(config.applicationName, equalTo("foo-consumer-group_foo-event-stream"))
+        assertThat(config.applicationName, equalTo("foo-consumer-group_bar-stream-name"))
     }
 
     @Test
     fun `consumer config should use provided credentials for dynamodb and cloudwatch`() {
-        whenever(properties.consumer).thenReturn(mutableListOf(fooStreamProperties))
+        consumerSettings("any")
 
-        val config = clientProvider.consumerConfig(FooEvent.STREAM_NAME)
+        val config = clientProvider.consumerConfig("any")
 
         assertThat(config.dynamoDBCredentialsProvider, equalTo(credentialsProvider))
         assertThat(config.cloudWatchCredentialsProvider, equalTo(credentialsProvider))
@@ -101,39 +139,33 @@ class AwsKinesisClientProviderTest {
 
     @Test
     fun `consumer config should use assumeRoleCredentialsProviderFactory to obtain kinesis credentials`() {
-        whenever(fooStreamProperties.awsAccountId).thenReturn("123")
-        whenever(fooStreamProperties.iamRoleToAssume).thenReturn("iam-role-to-assume")
-        whenever(properties.consumer).thenReturn(mutableListOf(fooStreamProperties))
+        consumerSettings("any", awsAccountId = "123", iamRole = "foo-iam-role")
 
         val kinesisCredentialsProvider = mock<AWSCredentialsProvider> { }
-        whenever(assumeRoleCredentialsProviderFactory.credentials("arn:aws:iam::123:role/iam-role-to-assume")).thenReturn(kinesisCredentialsProvider)
+        whenever(assumeRoleCredentialsProviderFactory.credentials("arn:aws:iam::123:role/foo-iam-role")).thenReturn(kinesisCredentialsProvider)
 
-        val config = clientProvider.consumerConfig(FooEvent.STREAM_NAME)
+        val config = clientProvider.consumerConfig("any")
 
         assertThat(config.kinesisCredentialsProvider, equalTo(kinesisCredentialsProvider))
     }
 
     @Test
-    fun `producer should use assumeRoleCredentialsProviderFactory to obtain credentials`() {
-        whenever(fooStreamProperties.awsAccountId).thenReturn("123")
-        whenever(fooStreamProperties.iamRoleToAssume).thenReturn("iam-role-to-assume")
-        whenever(properties.producer).thenReturn(mutableListOf(fooStreamProperties))
+    fun `producer should use assumeRoleCredentialsProviderFactory to obtain kinesis credentials`() {
+        producerSettings("any", awsAccountId = "321", iamRole = "bar-iam-role")
 
-        clientProvider.producer(FooEvent.STREAM_NAME)
+        clientProvider.producer("any")
 
-        verify(assumeRoleCredentialsProviderFactory).credentials("arn:aws:iam::123:role/iam-role-to-assume")
+        verify(assumeRoleCredentialsProviderFactory).credentials("arn:aws:iam::321:role/bar-iam-role")
     }
 
     @Test
     fun `producer should use kinesis endpoint defined in kinesis properties`() {
-        whenever(fooStreamProperties.awsAccountId).thenReturn("123")
-        whenever(fooStreamProperties.iamRoleToAssume).thenReturn("iam-role-to-assume")
-        whenever(properties.producer).thenReturn(mutableListOf(fooStreamProperties))
+        producerSettings("any")
 
-        clientProvider.producer(FooEvent.STREAM_NAME)
+        clientProvider.producer("any")
 
-        verify(properties).kinesisUrl
-        verify(properties).region
+        verify(settings).kinesisUrl
+        verify(settings).region
     }
 
 }
