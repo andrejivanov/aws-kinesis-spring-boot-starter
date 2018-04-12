@@ -48,30 +48,15 @@ aws:
         iamRoleToAssume: ExampleServiceKinesisProducer
 ```
 
-### 2. Define event model
-Define the Event model class by implementing `de.bringmeister.spring.aws.kinesis.Event` interface.
-
-```kotlin
-data class FooEvent(val metadata: EventMetadata, val data: Foo) : Event {
-    companion object {
-        const val STREAM_NAME = "foo-event-stream" //maps to stream name in application.yml
-    }
-    override fun streamName() = STREAM_NAME
-}
-
-data class EventMetadata(val occurredAt: OffsetDateTime)
-data class Foo(val foo: String)
-```
-
 ## Usage
 aws-kinesis-spring-boot-starter provides two spring-beans for publishing and consuming of event streams:
 - `de.bringmeister.spring.aws.kinesis.AwsKinesisInboundGateway`
 - `de.bringmeister.spring.aws.kinesis.AwsKinesisOutboundGateway`
 
 ### 2. Publish Events
-Inject `AwsKinesisOutboundGateway`-bean wherever you like and pass an event to the `send()`-method.
+Inject `AwsKinesisOutboundGateway`-bean wherever you like and pass stream-name, event payload (data) and event metadata to the `send()`-method.
 ```kotlin
-fun send(event: Event)
+fun <DataType, MetadataType> send(streamName: String, data: DataType, metadata: MetadataType)
 ```
 
 Example:
@@ -79,16 +64,30 @@ Example:
 @Service
 class EventProducer(private val gateway: AwsKinesisOutboundGateway) {
     fun sendAnyFooEvent() {        
-        gateway.send(FooEvent(metadata = EventMetadata(occurredAt = OffsetDateTime.now()), data = Foo("any foo value")))
+        gateway.send("foo-stream", data = FooCreatedEvent(foo = "anything"), metadata = EventMetadata(occurredAt = OffsetDateTime.now()))
     }
 }
 ```
 
+The event will be marshalled as json using jackson and send to the kinesis stream using the credentials defined in the application.yml.
+
+````
+{
+    "data":{
+        "foo":"anything"
+    },
+    metadata:{
+        "occurredAt":"2018-04-13T10:15:30+01:00"
+    }
+}
+````
+
 ### 3. Consume Events
-Inject `AwsKinesisInboundGateway` wherever you like and call `listen()`. You need to provide the name of the stream you defined in the application.yml, 
-the Class of the Event you implemented (needed for deserialization of json payload) and the method to process the event.
+Inject `AwsKinesisInboundGateway` wherever you like and call `listen()`. You need to provide the name of the stream you defined in the application.yml 
+and a event handler that handles your data and metadata.
 ```kotlin
-fun <T : Event> listen(streamName: String, eventClass: Class<T>, process: (T) -> Unit)
+fun <DataType, MetadataType> listen(streamName: String, handler: (DataType, MetadataType) -> Unit)
+
 ```
 
 Example:
@@ -98,7 +97,7 @@ class EventConsumer(private val gateway: AwsKinesisInboundGateway) {
     
     @Scheduled(fixedDelay = (60 * 1000))
     fun listenForFooEvents() {
-        gateway.listen(FooEvent.STREAM_NAME, FooEvent::class.java, { event -> println("Processing Event $event") })
+        gateway.listen(FooEvent.STREAM_NAME, { data:FooCreatedEvent, metadata:EventMetadata -> println("Processing Event $event") })
     }
 }
 ```

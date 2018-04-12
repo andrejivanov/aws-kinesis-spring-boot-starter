@@ -20,7 +20,11 @@ class AwsKinesisOutboundGateway(private val kinesisSettings: AwsKinesisSettings,
         kinesisClients = kinesisSettings.producer.map { it.streamName to clientProvider.producer(it.streamName) }.toMap()
     }
 
-    fun send(event: Event) {
+    fun <DataType, MetadataType> send(streamName: String, data: DataType, metadata: MetadataType) {
+        send(KinesisEventWrapper(streamName, data, metadata))
+    }
+
+    private fun <D, M> send(event: KinesisEvent<D, M>) {
         val request = requestFactory.request(event)
         val streamProperties = kinesisSettings.producer.first { it.streamName == event.streamName() }
 
@@ -36,11 +40,23 @@ class AwsKinesisOutboundGateway(private val kinesisSettings: AwsKinesisSettings,
     }
 }
 
+internal data class KinesisEventWrapper<out D, out M>(val streamName: String, val data: D, val metadata: M) : KinesisEvent<D, M> {
+    override fun streamName() = streamName
+    override fun data() = data
+    override fun metadata() = metadata
+}
+
+interface KinesisEvent<out D, out M> {
+    fun streamName(): String
+    fun data(): D
+    fun metadata(): M
+}
+
 class RequestFactory(private val objectMapper: ObjectMapper) {
 
-    fun request(event: Event): PutRecordRequest =
+    fun <D, M> request(event: KinesisEvent<D, M>): PutRecordRequest =
             PutRecordRequest()
-                    .withStreamName(event.streamName())
                     .withPartitionKey(UUID.randomUUID().toString())
+                    .withStreamName(event.streamName())
                     .withData(ByteBuffer.wrap(objectMapper.writeValueAsBytes(event)))
 }

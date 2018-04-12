@@ -8,10 +8,12 @@ import java.util.concurrent.TimeUnit
 
 class WorkerFactory(private val objectMapper: ObjectMapper) {
 
-    fun <T : Event> worker(config: KinesisClientLibConfiguration, eventClass: Class<T>, process: (T) -> Unit): Worker {
+    fun <D, M> worker(config: KinesisClientLibConfiguration, handler: (D, M) -> Unit): Worker {
 
         val processorFactory: () -> (IRecordProcessor) = {
-            AwsKinesisRecordProcessor(objectMapper, RecordProcessorConfiguration(10, TimeUnit.SECONDS.toMillis(3)), eventClass, process)
+            val configuration = RecordProcessorConfiguration(10, TimeUnit.SECONDS.toMillis(3))
+            val eventClass = KinesisEvent::class.java as Class<KinesisEvent<D, M>>
+            AwsKinesisRecordProcessor(objectMapper, configuration, handler, eventClass)
         }
 
         return Worker.Builder()
