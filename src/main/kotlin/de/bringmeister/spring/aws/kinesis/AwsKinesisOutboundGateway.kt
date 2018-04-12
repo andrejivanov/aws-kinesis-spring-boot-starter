@@ -34,6 +34,16 @@ class AwsKinesisOutboundGateway(private val kinesisSettings: AwsKinesisSettings,
                 result.shardId,
                 result.sequenceNumber)
     }
+
+    fun <T, M> send(streamName: String, payload: T, metadata: M) {
+        send(KinesisEventWrapper(streamName, payload, metadata))
+    }
+}
+
+internal data class KinesisEventWrapper<out T, out M>(val streamName: String, val data: T, val metadata: M) : KinesisEvent<T, M> {
+    override fun streamName() = streamName
+    override fun data() = data
+    override fun metadata() = metadata
 }
 
 class RequestFactory(private val objectMapper: ObjectMapper) {
