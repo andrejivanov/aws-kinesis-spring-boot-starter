@@ -5,7 +5,11 @@ import com.amazonaws.services.kinesis.model.PutRecordRequest
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.natpryce.hamkrest.assertion.assertThat
 import com.natpryce.hamkrest.equalTo
-import com.nhaarman.mockito_kotlin.*
+import com.nhaarman.mockito_kotlin.any
+import com.nhaarman.mockito_kotlin.argumentCaptor
+import com.nhaarman.mockito_kotlin.mock
+import com.nhaarman.mockito_kotlin.verify
+import com.nhaarman.mockito_kotlin.whenever
 import org.junit.Test
 
 class AwsKinesisOutboundGatewayTest {
@@ -32,7 +36,7 @@ class AwsKinesisOutboundGatewayTest {
         whenever(producer.putRecord(any())).thenReturn(mock { })
 
         unit.initKinesisClients()
-        val event = FooCreatedEvent(Foo("any-value"))
+        val event = FooCreatedEvent("any-value")
         val metadata = mock<EventMetadata> { }
         unit.send("foo-stream", data = event, metadata = metadata)
 
@@ -56,14 +60,14 @@ class RequestFactoryTest {
 
     @Test
     fun `should use event stream name for request`() {
-        val request = unit.request(KinesisEventWrapper<FooCreatedEvent, EventMetadata>("foo-stream", data = FooCreatedEvent(Foo("any-value")), metadata = mock { }))
+        val request = unit.request(KinesisEventWrapper<FooCreatedEvent, EventMetadata>("foo-stream", data = FooCreatedEvent("any-value"), metadata = mock { }))
 
         assertThat(request.streamName, equalTo("foo-stream"))
     }
 
     @Test
     fun `should serialize event using object mapper`() {
-        val event = KinesisEventWrapper<FooCreatedEvent, EventMetadata>("foo-stream", data = FooCreatedEvent(Foo("any-value")), metadata = mock { })
+        val event = KinesisEventWrapper<FooCreatedEvent, EventMetadata>("foo-stream", data = FooCreatedEvent("any-value"), metadata = mock { })
 
         val request = unit.request(event)
 

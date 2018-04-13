@@ -19,7 +19,7 @@ class AwsKinesisInboundGatewayTest : AbstractTest() {
 
     val workerFactory: WorkerFactory = mock {
         on {
-            worker(any(), any<RecordHandler<FooCreatedEvent, EventMetadata>>())
+            worker(any(), any<KinesisListener<FooCreatedEvent, EventMetadata>>())
         } doReturn mock<Worker> { }
     }
 
@@ -28,7 +28,7 @@ class AwsKinesisInboundGatewayTest : AbstractTest() {
     @Test
     fun `should get client configuration by stream name`() {
         val eventHandler = { _: FooCreatedEvent, _: EventMetadata -> }
-        unit.listen("foo-stream", eventHandler, FooCreatedEvent::class.java, EventMetadata::class.java)
+        unit.register("foo-stream", eventHandler, FooCreatedEvent::class.java, EventMetadata::class.java)
 
         verify(clientProvider).consumerConfig("foo-stream")
     }
@@ -39,17 +39,17 @@ class AwsKinesisInboundGatewayTest : AbstractTest() {
         val clientConfig: KinesisClientLibConfiguration = mock { }
         whenever(clientProvider.consumerConfig("foo-stream")).thenReturn(clientConfig)
 
-        unit.listen("foo-stream", eventHandler, FooCreatedEvent::class.java, EventMetadata::class.java)
+        unit.register("foo-stream", eventHandler, FooCreatedEvent::class.java, EventMetadata::class.java)
 
-        verify(workerFactory).worker(eq(clientConfig), eq(DefaultRecordHandler("foo-stream", FooCreatedEvent::class.java, EventMetadata::class.java, eventHandler)))
+        verify(workerFactory).worker(eq(clientConfig), eq(DefaultKinesisListener("foo-stream", FooCreatedEvent::class.java, EventMetadata::class.java, eventHandler)))
     }
 
     @Test
     fun `should run worker`() {
         val worker: Worker = mock { }
-        whenever(workerFactory.worker(any(), any<RecordHandler<*, *>>())).thenReturn(worker)
+        whenever(workerFactory.worker(any(), any<KinesisListener<*, *>>())).thenReturn(worker)
 
-        unit.listen("foo-stream", { _: FooCreatedEvent, _: EventMetadata -> }, FooCreatedEvent::class.java, EventMetadata::class.java)
+        unit.register("foo-stream", { _: FooCreatedEvent, _: EventMetadata -> }, FooCreatedEvent::class.java, EventMetadata::class.java)
 
         verify(worker).run()
     }

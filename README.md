@@ -83,33 +83,36 @@ The event will be marshalled as json using jackson and send to the kinesis strea
 ````
 
 ### 3. Consume Events
-Inject `AwsKinesisInboundGateway` wherever you like and call `listen()`. 
-You need to provide the name of the stream you defined in the application.yml, an event handler that handles your data and metadata and the class references of your data and metadata for deserialization.
-If you do not want to provide the class references, you can create an `EventHandler<DataType, MetadataType>` using the `handler()` method and pass it to `listen()`. The library will find on its own the proper 
-class references based on the provided event handler and store it within the `EventHandler<DataType, MetadataType>` instance.
-```kotlin
-fun <DataType, MetadataType, DClass : Class<DataType>, MClass : Class<MetadataType>> listen(streamName: String, eventHandler: (DataType, MetadataType) -> Unit, dataClass: DClass, metadataClass: MClass)
 
+There are multiple ways for consuming an AWS Kinesis stream.
+In any case, you need to provide the name of the stream you defined in the application.yml, an event handler that handles your data and metadata and the class references of your data and metadata for deserialization.
 
-inline fun <reified DataType, reified MetadataType> handler(streamName: String, noinline eventProcessor: (DataType, MetadataType) -> Unit): EventHandler<DataType, MetadataType>
-fun <DataType, MetadataType> listen(handler: EventHandler<DataType, MetadataType>)
+#### Option 1: Build a listener object and register it
 
-```
-
-Example:
-```kotlin
-@Service
-class EventConsumer(private val gateway: AwsKinesisInboundGateway) {
+    @Service
+    class Consumer(private val gateway: AwsKinesisInboundGateway) {
     
-    @Scheduled(fixedDelay = (60 * 1000))
-    fun listenForFooEvents() {
-        gateway.listen("foo-stream", { data:FooCreatedEvent, metadata:EventMetadata -> println("Processing $event") }, FooCreatedEvent::class.java, EventMetadata::class.java)
+        @Scheduled(fixedDelay = (60 * 1000))
+        fun registerListener() {
+            val kinesisListener = KinesisListener.build("foo-stream", { data: MyData, metadata: MyMetadata -> println("$data, $metadata") })
+            gateway.register(kinesisListener)
+        }
     }
 
-    @Scheduled(fixedDelay = (60 * 1000))
-    fun listenForBarEvents() {
-        val listener = gateway.listener("bar-stream", { data:BarCreatedEvent, metadata:EventMetadata -> println("Processing $event") })
-        gateway.listen(listener)
+#### Option 2: Extend the record handler interface
+
+    @Service
+    class MyDataKinesisListener(private val gateway: AwsKinesisInboundGateway): KinesisListener<MyData, MyMetadata> {
+    
+        override fun streamName(): String = "foo-stream"
+        override fun data(): Class<MyData> = MyData::class.java
+        override fun metadata(): Class<MyMetadata> = MyMetadata::class.java
+        override fun handle(data: MyData, metadata: MyMetadata) = println("$data, $metadata")
+    
+        @PostConstruct
+        fun registerMyself() = gateway.register(this)
     }
-}
-```
+
+
+
+

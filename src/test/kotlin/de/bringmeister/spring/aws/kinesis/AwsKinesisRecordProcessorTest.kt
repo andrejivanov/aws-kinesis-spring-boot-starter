@@ -25,10 +25,7 @@ import org.junit.Before
 import org.junit.Test
 import java.nio.ByteBuffer
 
-typealias EventProcessor<D, M> = (D, M) -> Unit
-
 class AwsKinesisRecordProcessorTest {
-
 
     val eventType = mock<JavaType> { }
     val typeFactory: TypeFactory = mock {
@@ -39,17 +36,13 @@ class AwsKinesisRecordProcessorTest {
         on { typeFactory } doReturn typeFactory
     }
 
-
-    // val objectMapper = mock<ObjectMapper> { }
     val streamCheckpointer = mock<IRecordProcessorCheckpointer> {}
     val configuration = mock<RecordProcessorConfiguration> {
         on { maxRetries } doReturn 1
         on { backoffTimeInMilliSeconds } doReturn 1
     }
 
-    // val eventType = mock<JavaType> { }
-//    val eventHandler = mock<EventProcessor<FooCreatedEvent, EventMetadata>> { }
-    val handler = mock<RecordHandler<FooCreatedEvent, EventMetadata>> {
+    val handler = mock<KinesisListener<FooCreatedEvent, EventMetadata>> {
         on { this.data() } doReturn FooCreatedEvent::class.java
         on { this.metadata() } doReturn EventMetadata::class.java
     }
@@ -106,7 +99,7 @@ class AwsKinesisRecordProcessorTest {
     @Test
     fun `should delegate all kinesis event payloads to event handler`() {
         val (firstEventJson, firstEvent) = eventPair()
-        val (secondEventJson, secondEvent) = Pair("""{"data":"{"name":"other-value"}"}""", KinesisEventWrapper<FooCreatedEvent, EventMetadata>(streamName = "foo-stream", data = FooCreatedEvent(Foo("other-value")), metadata = mock { }))
+        val (secondEventJson, secondEvent) = Pair("""{"data":"{"name":"other-value"}"}""", KinesisEventWrapper<FooCreatedEvent, EventMetadata>(streamName = "foo-stream", data = FooCreatedEvent("other-value"), metadata = mock { }))
         whenever(objectMapper.readValue<KinesisEventWrapper<FooCreatedEvent, EventMetadata>>(firstEventJson, eventType)).thenReturn(firstEvent)
         whenever(objectMapper.readValue<KinesisEventWrapper<FooCreatedEvent, EventMetadata>>(secondEventJson, eventType)).thenReturn(secondEvent)
 
@@ -203,7 +196,7 @@ class AwsKinesisRecordProcessorTest {
         verify(streamCheckpointer).checkpoint()
     }
 
-    private fun eventPair() = Pair("""{"data":"{"name":"any-value"}"}""", KinesisEventWrapper<FooCreatedEvent, EventMetadata>("foo-stream", data = FooCreatedEvent(Foo("any-value")), metadata = mock { }))
+    private fun eventPair() = Pair("""{"data":"{"name":"any-value"}"}""", KinesisEventWrapper<FooCreatedEvent, EventMetadata>("foo-stream", data = FooCreatedEvent("any-value"), metadata = mock { }))
     private fun wrap(vararg kinesisEvents: String): ProcessRecordsInput {
         return mock {
             val eventRecords = kinesisEvents.toList().map { event -> mock<Record> { on { data } doReturn ByteBuffer.wrap(event.toByteArray()) } }

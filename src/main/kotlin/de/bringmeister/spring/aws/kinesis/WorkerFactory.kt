@@ -6,9 +6,9 @@ import com.amazonaws.services.kinesis.clientlibrary.lib.worker.Worker
 import com.fasterxml.jackson.databind.ObjectMapper
 import java.util.concurrent.TimeUnit
 
-class WorkerFactory(val objectMapper: ObjectMapper) {
+class WorkerFactory(private val objectMapper: ObjectMapper) {
 
-    fun <D, M> worker(config: KinesisClientLibConfiguration, handler: RecordHandler<D, M>): Worker {
+    fun <D, M> worker(config: KinesisClientLibConfiguration, handler: KinesisListener<D, M>): Worker {
 
         val processorFactory: () -> (IRecordProcessor) = {
             val configuration = RecordProcessorConfiguration(10, TimeUnit.SECONDS.toMillis(3))

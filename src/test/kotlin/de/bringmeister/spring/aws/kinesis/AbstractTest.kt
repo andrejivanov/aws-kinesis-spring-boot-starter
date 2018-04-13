@@ -10,7 +10,6 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.junit4.SpringRunner
-import java.time.OffsetDateTime
 
 @RunWith(SpringRunner::class)
 @SpringBootTest(classes = [AbstractTest.ApplicationConfiguration::class])
@@ -25,7 +24,3 @@ abstract class AbstractTest {
         fun objectMapper() = mock<ObjectMapper> { }
     }
 }
-
-data class Foo(val name: String)
-data class FooCreatedEvent(val foo: Foo)
-data class EventMetadata(val occurredAt: OffsetDateTime?, val traceId: String?)

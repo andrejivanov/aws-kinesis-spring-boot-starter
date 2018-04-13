@@ -15,11 +15,9 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import org.slf4j.LoggerFactory
 import java.nio.charset.Charset
 
-
-
 class AwsKinesisRecordProcessor<D, M>(private val objectMapper: ObjectMapper,
                                       private val configuration: RecordProcessorConfiguration,
-                                      private val handler: RecordHandler<D, M>) : IRecordProcessor {
+                                      private val handler: KinesisListener<D, M>) : IRecordProcessor {
 
     private val log = LoggerFactory.getLogger(this.javaClass.name)
 
@@ -106,7 +104,7 @@ class AwsKinesisRecordProcessor<D, M>(private val objectMapper: ObjectMapper,
     }
 
     override fun shutdown(shutdownInput: ShutdownInput?) {
-        log.info("Shutting down record build")
+        log.info("Shutting down record processor")
         // Important to checkpoint after reaching end of shard, so we can start processing data from child shards.
         if (shutdownInput?.shutdownReason == ShutdownReason.TERMINATE) {
             checkpoint(shutdownInput.checkpointer)
