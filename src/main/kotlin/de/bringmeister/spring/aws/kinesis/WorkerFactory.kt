@@ -8,7 +8,7 @@ import java.util.concurrent.TimeUnit
 
 class WorkerFactory(val objectMapper: ObjectMapper) {
 
-    fun <D, M> worker(config: KinesisClientLibConfiguration, handler: EventHandler<D, M>): Worker {
+    fun <D, M> worker(config: KinesisClientLibConfiguration, handler: RecordHandler<D, M>): Worker {
 
         val processorFactory: () -> (IRecordProcessor) = {
             val configuration = RecordProcessorConfiguration(10, TimeUnit.SECONDS.toMillis(3))

@@ -2,9 +2,6 @@ package de.bringmeister.spring.aws.kinesis
 
 import com.amazonaws.services.kinesis.clientlibrary.lib.worker.KinesisClientLibConfiguration
 import com.amazonaws.services.kinesis.clientlibrary.lib.worker.Worker
-import com.fasterxml.jackson.databind.JavaType
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.type.TypeFactory
 import com.nhaarman.mockito_kotlin.any
 import com.nhaarman.mockito_kotlin.doReturn
 import com.nhaarman.mockito_kotlin.eq
@@ -22,21 +19,11 @@ class AwsKinesisInboundGatewayTest : AbstractTest() {
 
     val workerFactory: WorkerFactory = mock {
         on {
-            worker(any(), any<EventHandler<FooCreatedEvent, EventMetadata>>())
+            worker(any(), any<RecordHandler<FooCreatedEvent, EventMetadata>>())
         } doReturn mock<Worker> { }
     }
 
-    val eventType = mock<JavaType> { }
-    val typeFactory: TypeFactory = mock {
-        on { constructParametricType(com.nhaarman.mockito_kotlin.any(), com.nhaarman.mockito_kotlin.any<Class<*>>()) } doReturn eventType
-    }
-
-    val objectMapper = mock<ObjectMapper> {
-        on { typeFactory } doReturn typeFactory
-    }
-
-
-    val unit = AwsKinesisInboundGateway(objectMapper, clientProvider, workerFactory)
+    val unit = AwsKinesisInboundGateway(clientProvider, workerFactory)
 
     @Test
     fun `should get client configuration by stream name`() {
@@ -54,13 +41,13 @@ class AwsKinesisInboundGatewayTest : AbstractTest() {
 
         unit.listen("foo-stream", eventHandler, FooCreatedEvent::class.java, EventMetadata::class.java)
 
-        verify(workerFactory).worker(eq(clientConfig), eq(EventHandler("foo-stream", eventType, eventHandler)))
+        verify(workerFactory).worker(eq(clientConfig), eq(DefaultRecordHandler("foo-stream", FooCreatedEvent::class.java, EventMetadata::class.java, eventHandler)))
     }
 
     @Test
     fun `should run worker`() {
         val worker: Worker = mock { }
-        whenever(workerFactory.worker(any(), any<EventHandler<*, *>>())).thenReturn(worker)
+        whenever(workerFactory.worker(any(), any<RecordHandler<*, *>>())).thenReturn(worker)
 
         unit.listen("foo-stream", { _: FooCreatedEvent, _: EventMetadata -> }, FooCreatedEvent::class.java, EventMetadata::class.java)
 

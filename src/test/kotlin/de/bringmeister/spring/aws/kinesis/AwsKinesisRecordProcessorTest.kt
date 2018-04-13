@@ -12,9 +12,11 @@ import com.amazonaws.services.kinesis.clientlibrary.types.ShutdownInput
 import com.amazonaws.services.kinesis.model.Record
 import com.fasterxml.jackson.databind.JavaType
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.type.TypeFactory
 import com.nhaarman.mockito_kotlin.any
 import com.nhaarman.mockito_kotlin.doReturn
 import com.nhaarman.mockito_kotlin.doThrow
+import com.nhaarman.mockito_kotlin.eq
 import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.times
 import com.nhaarman.mockito_kotlin.verify
@@ -27,18 +29,29 @@ typealias EventProcessor<D, M> = (D, M) -> Unit
 
 class AwsKinesisRecordProcessorTest {
 
-    val objectMapper = mock<ObjectMapper> { }
+
+    val eventType = mock<JavaType> { }
+    val typeFactory: TypeFactory = mock {
+        on { constructParametricType(any(), any<Class<*>>()) } doReturn eventType
+    }
+
+    val objectMapper = mock<ObjectMapper> {
+        on { typeFactory } doReturn typeFactory
+    }
+
+
+    // val objectMapper = mock<ObjectMapper> { }
     val streamCheckpointer = mock<IRecordProcessorCheckpointer> {}
     val configuration = mock<RecordProcessorConfiguration> {
         on { maxRetries } doReturn 1
         on { backoffTimeInMilliSeconds } doReturn 1
     }
 
-    val eventType = mock<JavaType> { }
-    val eventHandler = mock<EventProcessor<FooCreatedEvent, EventMetadata>> { }
-    val handler = mock<EventHandler<FooCreatedEvent, EventMetadata>> {
-        on { this.eventType } doReturn eventType
-        on { this.eventHandler } doReturn eventHandler
+    // val eventType = mock<JavaType> { }
+//    val eventHandler = mock<EventProcessor<FooCreatedEvent, EventMetadata>> { }
+    val handler = mock<RecordHandler<FooCreatedEvent, EventMetadata>> {
+        on { this.data() } doReturn FooCreatedEvent::class.java
+        on { this.metadata() } doReturn EventMetadata::class.java
     }
 
     val unit = AwsKinesisRecordProcessor(objectMapper, configuration, handler)
@@ -87,7 +100,7 @@ class AwsKinesisRecordProcessorTest {
 
         unit.processRecords(wrap(eventJson))
 
-        verify(eventHandler).invoke(event.data, event.metadata)
+        verify(handler).handle(event.data, event.metadata)
     }
 
     @Test
@@ -99,22 +112,22 @@ class AwsKinesisRecordProcessorTest {
 
         unit.processRecords(wrap(firstEventJson, secondEventJson))
 
-        verify(eventHandler).invoke(firstEvent.data, firstEvent.metadata)
-        verify(eventHandler).invoke(secondEvent.data, secondEvent.metadata)
+        verify(handler).handle(firstEvent.data, firstEvent.metadata)
+        verify(handler).handle(secondEvent.data, secondEvent.metadata)
     }
 
     @Test
     fun `should retry processing on exception`() {
         val (eventJson, event) = eventPair()
-        whenever(objectMapper.readValue<KinesisEventWrapper<FooCreatedEvent, EventMetadata>>(eventJson, eventType)).thenReturn(event)
+        whenever(objectMapper.readValue<KinesisEventWrapper<FooCreatedEvent, EventMetadata>>(eq(eventJson), any<JavaType>())).thenReturn(event)
         whenever(configuration.maxRetries).thenReturn(2)
-        whenever(eventHandler.invoke(event.data, event.metadata))
+        whenever(handler.handle(event.data, event.metadata))
                 .doThrow(RuntimeException::class)
-                .thenReturn(Unit) // stop throwing
+                .then {  } // stop throwing
 
         unit.processRecords(wrap(eventJson))
 
-        verify(eventHandler, times(2)).invoke(event.data, event.metadata)
+        verify(handler, times(2)).handle(event.data, event.metadata)
     }
 
     @Test
