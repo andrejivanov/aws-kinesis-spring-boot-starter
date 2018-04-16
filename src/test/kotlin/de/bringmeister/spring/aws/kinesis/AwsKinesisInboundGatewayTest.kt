@@ -23,7 +23,9 @@ class AwsKinesisInboundGatewayTest : AbstractTest() {
         } doReturn mock<Worker> { }
     }
 
-    val unit = AwsKinesisInboundGateway(clientProvider, workerFactory)
+    val workerStarter: WorkerStarter = mock {  }
+
+    val unit = AwsKinesisInboundGateway(clientProvider, workerFactory, workerStarter)
 
     @Test
     fun `should get client configuration by stream name`() {
@@ -51,6 +53,6 @@ class AwsKinesisInboundGatewayTest : AbstractTest() {
 
         unit.register("foo-stream", { _: FooCreatedEvent, _: EventMetadata -> }, FooCreatedEvent::class.java, EventMetadata::class.java)
 
-        verify(worker).run()
+        verify(workerStarter).start(worker)
     }
 }

@@ -48,6 +48,10 @@ class AwsKinesisAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
+    fun workerStarter() = WorkerStarter()
+
+    @Bean
+    @ConditionalOnMissingBean
     @ConditionalOnBean(ObjectMapper::class)
     fun workerFactory(objectMapper: ObjectMapper) = WorkerFactory(objectMapper)
 
@@ -65,7 +69,8 @@ class AwsKinesisAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     fun kinesisInboundGateway(clientProvider: AwsKinesisClientProvider,
-                              workerFactory: WorkerFactory) = AwsKinesisInboundGateway(clientProvider, workerFactory)
+                              workerFactory: WorkerFactory,
+                              workerStarter: WorkerStarter) = AwsKinesisInboundGateway(clientProvider, workerFactory, workerStarter)
 
 
 }
