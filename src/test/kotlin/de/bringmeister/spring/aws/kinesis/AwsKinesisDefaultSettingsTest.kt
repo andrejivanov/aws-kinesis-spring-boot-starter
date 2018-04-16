@@ -13,13 +13,13 @@ class AwsKinesisDefaultSettingsTest : AbstractTest() {
 
     @Test
     fun `should use default kinesis settings`() {
-        assertThat(settings.kinesisUrl, equalTo("https://kinesis.eu-central-1.amazonaws.com"))
-        assertThat(settings.region, equalTo("eu-central-1"))
+        assertThat(settings.kinesisUrl, equalTo("http://localhost:14567"))
+        assertThat(settings.region, equalTo("local"))
     }
 
     @Test
     fun `should use default consumer settings`() {
-        assertThat(settings.consumer[0].dynamoDBSettings.url, equalTo("https://dynamodb.eu-central-1.amazonaws.com"))
+        assertThat(settings.consumer[0].dynamoDBSettings.url, equalTo("http://localhost:14568"))
         assertThat(settings.consumer[0].metricsLevel, equalTo(MetricsLevel.NONE.name))
         assertThat(settings.consumer[0].dynamoDBSettings.leaseTableReadCapacity, equalTo(1))
         assertThat(settings.consumer[0].dynamoDBSettings.leaseTableWriteCapacity, equalTo(1))
