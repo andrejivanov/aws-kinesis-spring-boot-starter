@@ -4,7 +4,6 @@ import com.github.dockerjava.api.model.ExposedPort
 import com.github.dockerjava.api.model.PortBinding
 import com.github.dockerjava.api.model.Ports
 import de.bringmeister.spring.aws.kinesis.AwsKinesisAutoConfiguration
-import de.bringmeister.spring.aws.kinesis.AwsKinesisInboundGateway
 import de.bringmeister.spring.aws.kinesis.AwsKinesisOutboundGateway
 import de.bringmeister.spring.aws.kinesis.EventMetadata
 import de.bringmeister.spring.aws.kinesis.FooCreatedEvent
@@ -24,6 +23,7 @@ import java.util.concurrent.CountDownLatch
 
 @ActiveProfiles("kinesis-local")
 @SpringBootTest(classes = [
+    TestListener::class,
     JacksonConfiguration::class,
     JacksonAutoConfiguration::class,
     AwsKinesisAutoConfiguration::class,
@@ -35,10 +35,10 @@ class KinesisGatewayIntegrationTest {
     @Autowired
     lateinit var outbound: AwsKinesisOutboundGateway
 
-    @Autowired
-    lateinit var inbound: AwsKinesisInboundGateway
-
     companion object {
+
+        val latch = CountDownLatch(1)
+
         class KGenericContainer(imageName: String) : GenericContainer<KGenericContainer>(imageName)
 
         @ClassRule
@@ -56,18 +56,9 @@ class KinesisGatewayIntegrationTest {
 
     @Test
     fun `should send and receive events`() {
-        val latch = CountDownLatch(1)
+
         val fooEvent = FooCreatedEvent("any-field")
         val metadata = EventMetadata("test")
-
-        inbound.register(object : KinesisListener<FooCreatedEvent, EventMetadata> {
-            override fun data(): Class<FooCreatedEvent> = FooCreatedEvent::class.java
-            override fun metadata(): Class<EventMetadata> = EventMetadata::class.java
-            override fun streamName(): String = "foo-event-stream"
-            override fun handle(data: FooCreatedEvent, metadata: EventMetadata) {
-                latch.countDown()
-            }
-        })
 
         outbound.send("foo-event-stream", fooEvent, metadata)
 
@@ -75,5 +66,14 @@ class KinesisGatewayIntegrationTest {
 
         // If we come to this point, the latch was counted down!
         // This means the event has been consumed - test succeeded!
+    }
+}
+
+class TestListener : KinesisListener<FooCreatedEvent, EventMetadata> {
+    override fun data(): Class<FooCreatedEvent> = FooCreatedEvent::class.java
+    override fun metadata(): Class<EventMetadata> = EventMetadata::class.java
+    override fun streamName(): String = "foo-event-stream"
+    override fun handle(data: FooCreatedEvent, metadata: EventMetadata) {
+        KinesisGatewayIntegrationTest.latch.countDown()
     }
 }

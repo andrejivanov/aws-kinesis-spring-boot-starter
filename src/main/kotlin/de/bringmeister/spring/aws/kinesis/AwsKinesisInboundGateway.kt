@@ -20,6 +20,6 @@ class AwsKinesisInboundGateway(private val clientProvider: AwsKinesisClientProvi
         val config = clientProvider.consumerConfig(handler.streamName())
         val worker = workerFactory.worker(config, handler)
         workerStarter.start(worker)
-        log.info("Started AWS Kinesis listener. [stream={}, expecting={}]...", handler.streamName(), handler.data().simpleName)
+        log.info("Started AWS Kinesis listener. [stream={}, expecting={}]", handler.streamName(), handler.data().simpleName)
     }
 }

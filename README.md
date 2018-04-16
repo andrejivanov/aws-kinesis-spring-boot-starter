@@ -101,16 +101,16 @@ In any case, you need to provide the name of the stream you defined in the appli
 
 #### Option 2: Extend the record handler interface
 
+You can extend the `KinesisListener` interface.
+If your class is annotated with `@Service` or `@Component` it will be picked-up automatically and registered as a listener.
+
     @Service
-    class MyDataKinesisListener(private val gateway: AwsKinesisInboundGateway): KinesisListener<MyData, MyMetadata> {
+    class MyDataKinesisListener: KinesisListener<MyData, MyMetadata> {
     
         override fun streamName(): String = "foo-stream"
         override fun data(): Class<MyData> = MyData::class.java
         override fun metadata(): Class<MyMetadata> = MyMetadata::class.java
         override fun handle(data: MyData, metadata: MyMetadata) = println("$data, $metadata")
-    
-        @PostConstruct
-        fun registerMyself() = gateway.register(this)
     }
 
 
