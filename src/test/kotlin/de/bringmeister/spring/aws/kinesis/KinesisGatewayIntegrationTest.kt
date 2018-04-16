@@ -12,7 +12,6 @@ import de.bringmeister.spring.aws.kinesis.JacksonConfiguration
 import de.bringmeister.spring.aws.kinesis.KinesisListener
 import de.bringmeister.spring.aws.kinesis.local.KinesisLocalConfiguration
 import org.junit.ClassRule
-import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.springframework.beans.factory.annotation.Autowired
@@ -57,9 +56,6 @@ class KinesisGatewayIntegrationTest {
     }
 
     @Test
-    @Ignore("Unfortunately bitbucket pipeline runner fails due to permissions needed by testscontainers to create the " +
-            "kinesis and dynamodb containers. It might be that the mounted volume is the problem. Bitbucket allows only to bind" +
-            "stuff relative to BITBUCKET_CLONE_DIR")
     fun `should send and receive events`() {
         val latch = CountDownLatch(1)
         val fooEvent = FooCreatedEvent("any-field")
