@@ -26,6 +26,27 @@ buildscript {
     }
 }
 
+configurations.all {
+    resolutionStrategy {
+
+        failOnVersionConflict()
+
+        force 'org.jetbrains.kotlin:kotlin-reflect:1.2.30'
+        force 'commons-logging:commons-logging:1.2'
+        force 'org.jetbrains.kotlin:kotlin-stdlib:1.2.30'
+        force 'org.mockito:mockito-core:2.8.9'
+        force 'org.slf4j:jcl-over-slf4j:1.7.25'
+        force 'org.slf4j:slf4j-api:1.7.25'
+        force 'commons-io:commons-io:2.5'
+        force 'commons-codec:commons-codec:1.10'
+        force 'com.amazonaws:aws-java-sdk-core:1.11.280'
+        force 'com.amazonaws:jmespath-java:1.11.280'
+        force 'javax.validation:validation-api:2.0.1.Final'
+        force 'com.fasterxml.jackson.core:jackson-databind:2.9.2'
+        force 'com.fasterxml.jackson.core:jackson-core:2.9.2'
+    }
+}
+
 allprojects {
     repositories(allRepositories)
 }
@@ -48,25 +69,25 @@ compileTestKotlin {
 }
 
 dependencies {
+
     compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:${versions.kotlin}"
     compile "org.jetbrains.kotlin:kotlin-reflect:${versions.kotlin}"
-
     compile "org.springframework.boot:spring-boot-autoconfigure:${versions.springBoot}"
     compile "org.springframework.boot:spring-boot-configuration-processor:${versions.springBoot}"
-    compile "com.fasterxml.jackson.module:jackson-module-kotlin:${versions.jackson}"
-
     compile "com.amazonaws:aws-java-sdk-sts:${versions.awsSdk}"
     compile "com.amazonaws:amazon-kinesis-client:${versions.kinesis}"
-
     compile "org.slf4j:slf4j-api:1.7.25"
     compile "javax.validation:validation-api:2.0.0.Final"
 
     testCompile "org.hibernate:hibernate-validator:6.0.8.Final"
-    testCompile 'org.springframework.boot:spring-boot-starter-test:1.5.8.RELEASE'
-    testCompile 'commons-logging:commons-logging'
-    testCompile 'com.nhaarman:mockito-kotlin:1.5.0'
-    testCompile 'com.natpryce:hamkrest:1.4.2.2'
-    testCompile 'org.yaml:snakeyaml:1.20'
+    testCompile "org.springframework.boot:spring-boot-starter-test:1.5.8.RELEASE"
+    testCompile "commons-logging:commons-logging"
+    testCompile "com.nhaarman:mockito-kotlin:1.5.0"
+    testCompile "com.natpryce:hamkrest:1.4.2.2"
+    testCompile "org.yaml:snakeyaml:1.20"
+    testCompile "org.testcontainers:testcontainers:1.6.0"
+    testCompile "org.springframework.boot:spring-boot-starter-log4j2:1.5.8.RELEASE"
+    testCompile "com.fasterxml.jackson.module:jackson-module-kotlin:${versions.jackson}"
 }
 
 task sourceJar(type: Jar) {
