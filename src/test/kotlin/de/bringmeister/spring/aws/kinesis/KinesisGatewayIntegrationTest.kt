@@ -21,7 +21,6 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.junit4.SpringRunner
 import org.testcontainers.containers.GenericContainer
 import java.util.concurrent.CountDownLatch
-import kotlin.concurrent.thread
 
 @ActiveProfiles("kinesis-local")
 @SpringBootTest(classes = [
@@ -61,16 +60,14 @@ class KinesisGatewayIntegrationTest {
         val fooEvent = FooCreatedEvent("any-field")
         val metadata = EventMetadata("test")
 
-        thread(start = true) {
-            inbound.register(object : KinesisListener<FooCreatedEvent, EventMetadata> {
-                override fun data(): Class<FooCreatedEvent> = FooCreatedEvent::class.java
-                override fun metadata(): Class<EventMetadata> = EventMetadata::class.java
-                override fun streamName(): String = "foo-event-stream"
-                override fun handle(data: FooCreatedEvent, metadata: EventMetadata) {
-                    latch.countDown()
-                }
-            })
-        }
+        inbound.register(object : KinesisListener<FooCreatedEvent, EventMetadata> {
+            override fun data(): Class<FooCreatedEvent> = FooCreatedEvent::class.java
+            override fun metadata(): Class<EventMetadata> = EventMetadata::class.java
+            override fun streamName(): String = "foo-event-stream"
+            override fun handle(data: FooCreatedEvent, metadata: EventMetadata) {
+                latch.countDown()
+            }
+        })
 
         outbound.send("foo-event-stream", fooEvent, metadata)
 

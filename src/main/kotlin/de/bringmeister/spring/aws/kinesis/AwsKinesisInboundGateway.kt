@@ -3,7 +3,8 @@ package de.bringmeister.spring.aws.kinesis
 import org.slf4j.LoggerFactory
 
 class AwsKinesisInboundGateway(private val clientProvider: AwsKinesisClientProvider,
-                               private val workerFactory: WorkerFactory) {
+                               private val workerFactory: WorkerFactory,
+                               private val workerStarter: WorkerStarter) {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
 
@@ -16,13 +17,9 @@ class AwsKinesisInboundGateway(private val clientProvider: AwsKinesisClientProvi
     }
 
     fun <D, M> register(handler: KinesisListener<D, M>) {
-        log.info("Listening for events on [{}]", handler.streamName())
-
         val config = clientProvider.consumerConfig(handler.streamName())
         val worker = workerFactory.worker(config, handler)
-
-        log.info("Running consumer to process stream [{}]...", handler.streamName())
-
-        worker.run()
+        workerStarter.start(worker)
+        log.info("Started AWS Kinesis listener. [stream={}, expecting={}]...", handler.streamName(), handler.data().simpleName)
     }
 }
