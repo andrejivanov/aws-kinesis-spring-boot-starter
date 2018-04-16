@@ -10,9 +10,13 @@ import com.amazonaws.services.kinesis.clientlibrary.types.InitializationInput
 import com.amazonaws.services.kinesis.clientlibrary.types.ProcessRecordsInput
 import com.amazonaws.services.kinesis.clientlibrary.types.ShutdownInput
 import com.amazonaws.services.kinesis.model.Record
+import com.fasterxml.jackson.databind.JavaType
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.type.TypeFactory
+import com.nhaarman.mockito_kotlin.any
 import com.nhaarman.mockito_kotlin.doReturn
 import com.nhaarman.mockito_kotlin.doThrow
+import com.nhaarman.mockito_kotlin.eq
 import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.times
 import com.nhaarman.mockito_kotlin.verify
@@ -21,19 +25,29 @@ import org.junit.Before
 import org.junit.Test
 import java.nio.ByteBuffer
 
-typealias EventProcessor<D, M> = (D, M) -> Unit
-
 class AwsKinesisRecordProcessorTest {
 
-    val objectMapper = mock<ObjectMapper> { }
+    val eventType = mock<JavaType> { }
+    val typeFactory: TypeFactory = mock {
+        on { constructParametricType(any(), any<Class<*>>()) } doReturn eventType
+    }
+
+    val objectMapper = mock<ObjectMapper> {
+        on { typeFactory } doReturn typeFactory
+    }
+
     val streamCheckpointer = mock<IRecordProcessorCheckpointer> {}
     val configuration = mock<RecordProcessorConfiguration> {
         on { maxRetries } doReturn 1
         on { backoffTimeInMilliSeconds } doReturn 1
     }
-    val eventProcessor = mock<EventProcessor<FooCreatedEvent, EventMetadata>> { }
 
-    val unit = AwsKinesisRecordProcessor(objectMapper, configuration, eventProcessor, KinesisEvent::class.java as Class<KinesisEvent<FooCreatedEvent, EventMetadata>>)
+    val handler = mock<KinesisListener<FooCreatedEvent, EventMetadata>> {
+        on { this.data() } doReturn FooCreatedEvent::class.java
+        on { this.metadata() } doReturn EventMetadata::class.java
+    }
+
+    val unit = AwsKinesisRecordProcessor(objectMapper, configuration, handler)
 
     @Before
     fun setUp() {
@@ -49,7 +63,7 @@ class AwsKinesisRecordProcessorTest {
 
         unit.processRecords(wrap(kinesisEvent))
 
-        verify(objectMapper).readValue(kinesisEvent, KinesisEvent::class.java)
+        verify(objectMapper).readValue<KinesisEventWrapper<FooCreatedEvent, EventMetadata>>(kinesisEvent, eventType)
     }
 
     @Test
@@ -58,7 +72,7 @@ class AwsKinesisRecordProcessorTest {
 
         unit.processRecords(wrap(kinesisEvent))
 
-        verify(objectMapper).readValue(kinesisEvent, KinesisEvent::class.java)
+        verify(objectMapper).readValue<KinesisEventWrapper<FooCreatedEvent, EventMetadata>>(kinesisEvent, eventType)
     }
 
     @Test
@@ -68,105 +82,105 @@ class AwsKinesisRecordProcessorTest {
 
         unit.processRecords(wrap(oneKinesisEvent, anotherKinesisEvent))
 
-        verify(objectMapper).readValue(oneKinesisEvent, KinesisEvent::class.java)
-        verify(objectMapper).readValue(anotherKinesisEvent, KinesisEvent::class.java)
+        verify(objectMapper).readValue<KinesisEventWrapper<FooCreatedEvent, EventMetadata>>(oneKinesisEvent, eventType)
+        verify(objectMapper).readValue<KinesisEventWrapper<FooCreatedEvent, EventMetadata>>(anotherKinesisEvent, eventType)
     }
 
     @Test
-    fun `should delegate kinesis event payload to event processor`() {
-        val (kinesisEvent, kinesisEventInstance) = eventPair()
-        whenever(objectMapper.readValue(kinesisEvent, KinesisEvent::class.java)).thenReturn(kinesisEventInstance)
+    fun `should delegate kinesis event payload to event handler`() {
+        val (eventJson, event) = eventPair()
+        whenever(objectMapper.readValue<KinesisEventWrapper<FooCreatedEvent, EventMetadata>>(eventJson, eventType)).thenReturn(event)
 
-        unit.processRecords(wrap(kinesisEvent))
+        unit.processRecords(wrap(eventJson))
 
-        verify(eventProcessor).invoke(kinesisEventInstance.data, kinesisEventInstance.metadata)
+        verify(handler).handle(event.data, event.metadata)
     }
 
     @Test
-    fun `should delegate all kinesis event payloads to event processor`() {
-        val (oneKinesisEvent, oneKinesisEventInstance) = eventPair()
-        val (anotherKinesisEvent, anotherKinesisEventInstance) = Pair("""{"data":"{"name":"other-value"}"}""", KinesisEventWrapper<FooCreatedEvent, EventMetadata>(streamName = "foo-stream", data = FooCreatedEvent(Foo("other-value")), metadata = mock { }))
-        whenever(objectMapper.readValue(oneKinesisEvent, KinesisEvent::class.java)).thenReturn(oneKinesisEventInstance)
-        whenever(objectMapper.readValue(anotherKinesisEvent, KinesisEvent::class.java)).thenReturn(anotherKinesisEventInstance)
+    fun `should delegate all kinesis event payloads to event handler`() {
+        val (firstEventJson, firstEvent) = eventPair()
+        val (secondEventJson, secondEvent) = Pair("""{"data":"{"name":"other-value"}"}""", KinesisEventWrapper<FooCreatedEvent, EventMetadata>(streamName = "foo-stream", data = FooCreatedEvent("other-value"), metadata = mock { }))
+        whenever(objectMapper.readValue<KinesisEventWrapper<FooCreatedEvent, EventMetadata>>(firstEventJson, eventType)).thenReturn(firstEvent)
+        whenever(objectMapper.readValue<KinesisEventWrapper<FooCreatedEvent, EventMetadata>>(secondEventJson, eventType)).thenReturn(secondEvent)
 
-        unit.processRecords(wrap(oneKinesisEvent, anotherKinesisEvent))
+        unit.processRecords(wrap(firstEventJson, secondEventJson))
 
-        verify(eventProcessor).invoke(oneKinesisEventInstance.data, oneKinesisEventInstance.metadata)
-        verify(eventProcessor).invoke(anotherKinesisEventInstance.data, anotherKinesisEventInstance.metadata)
+        verify(handler).handle(firstEvent.data, firstEvent.metadata)
+        verify(handler).handle(secondEvent.data, secondEvent.metadata)
     }
 
     @Test
     fun `should retry processing on exception`() {
-        val (kinesisEvent, kinesisEventInstance) = eventPair()
-        whenever(objectMapper.readValue(kinesisEvent, KinesisEvent::class.java)).thenReturn(kinesisEventInstance)
+        val (eventJson, event) = eventPair()
+        whenever(objectMapper.readValue<KinesisEventWrapper<FooCreatedEvent, EventMetadata>>(eq(eventJson), any<JavaType>())).thenReturn(event)
         whenever(configuration.maxRetries).thenReturn(2)
-        whenever(eventProcessor.invoke(kinesisEventInstance.data, kinesisEventInstance.metadata))
+        whenever(handler.handle(event.data, event.metadata))
                 .doThrow(RuntimeException::class)
-                .thenReturn(Unit) // stop throwing
+                .then {  } // stop throwing
 
-        unit.processRecords(wrap(kinesisEvent))
+        unit.processRecords(wrap(eventJson))
 
-        verify(eventProcessor, times(2)).invoke(kinesisEventInstance.data, kinesisEventInstance.metadata)
+        verify(handler, times(2)).handle(event.data, event.metadata)
     }
 
     @Test
     fun `should checkpoint after processing event batch`() {
-        val (kinesisEvent, kinesisEventInstance) = eventPair()
-        whenever(objectMapper.readValue(kinesisEvent, KinesisEvent::class.java)).thenReturn(kinesisEventInstance)
+        val (eventJson, event) = eventPair()
+        whenever(objectMapper.readValue<KinesisEventWrapper<FooCreatedEvent, EventMetadata>>(eventJson, eventType)).thenReturn(event)
 
-        unit.processRecords(wrap(kinesisEvent))
+        unit.processRecords(wrap(eventJson))
 
         verify(streamCheckpointer).checkpoint()
     }
 
     @Test
     fun `should retry checkpointing on dependency exception`() {
-        val (kinesisEvent, kinesisEventInstance) = eventPair()
-        whenever(objectMapper.readValue(kinesisEvent, KinesisEvent::class.java)).thenReturn(kinesisEventInstance)
+        val (eventJson, event) = eventPair()
+        whenever(objectMapper.readValue<KinesisEventWrapper<FooCreatedEvent, EventMetadata>>(eventJson, eventType)).thenReturn(event)
         whenever(configuration.maxRetries).thenReturn(2)
         whenever(streamCheckpointer.checkpoint())
                 .doThrow(KinesisClientLibDependencyException::class).then { } // stop throwing
 
-        unit.processRecords(wrap(kinesisEvent))
+        unit.processRecords(wrap(eventJson))
 
         verify(streamCheckpointer, times(2)).checkpoint()
     }
 
     @Test
     fun `should retry checkpointing on throttling exception`() {
-        val (kinesisEvent, kinesisEventInstance) = eventPair()
-        whenever(objectMapper.readValue(kinesisEvent, KinesisEvent::class.java)).thenReturn(kinesisEventInstance)
+        val (eventJson, event) = eventPair()
+        whenever(objectMapper.readValue<KinesisEventWrapper<FooCreatedEvent, EventMetadata>>(eventJson, eventType)).thenReturn(event)
         whenever(configuration.maxRetries).thenReturn(2)
         whenever(streamCheckpointer.checkpoint())
                 .doThrow(ThrottlingException::class).then { } // stop throwing
 
-        unit.processRecords(wrap(kinesisEvent))
+        unit.processRecords(wrap(eventJson))
 
         verify(streamCheckpointer, times(2)).checkpoint()
     }
 
     @Test
     fun `shouldn't retry checkpointing when application is shutting down`() {
-        val (kinesisEvent, kinesisEventInstance) = eventPair()
-        whenever(objectMapper.readValue(kinesisEvent, KinesisEvent::class.java)).thenReturn(kinesisEventInstance)
+        val (eventJson, event) = eventPair()
+        whenever(objectMapper.readValue<KinesisEventWrapper<FooCreatedEvent, EventMetadata>>(eventJson, eventType)).thenReturn(event)
         whenever(configuration.maxRetries).thenReturn(2)
         whenever(streamCheckpointer.checkpoint())
                 .doThrow(ShutdownException::class).then { } // stop throwing
 
-        unit.processRecords(wrap(kinesisEvent))
+        unit.processRecords(wrap(eventJson))
 
         verify(streamCheckpointer).checkpoint()
     }
 
     @Test
     fun `shouldn't retry checkpointing on invalid state`() {
-        val (kinesisEvent, kinesisEventInstance) = eventPair()
-        whenever(objectMapper.readValue(kinesisEvent, KinesisEvent::class.java)).thenReturn(kinesisEventInstance)
+        val (eventJson, event) = eventPair()
+        whenever(objectMapper.readValue<KinesisEventWrapper<FooCreatedEvent, EventMetadata>>(eventJson, eventType)).thenReturn(event)
         whenever(configuration.maxRetries).thenReturn(2)
         whenever(streamCheckpointer.checkpoint())
                 .doThrow(InvalidStateException::class).then { } // stop throwing
 
-        unit.processRecords(wrap(kinesisEvent))
+        unit.processRecords(wrap(eventJson))
 
         verify(streamCheckpointer).checkpoint()
     }
@@ -182,7 +196,7 @@ class AwsKinesisRecordProcessorTest {
         verify(streamCheckpointer).checkpoint()
     }
 
-    private fun eventPair() = Pair("""{"data":"{"name":"any-value"}"}""", KinesisEventWrapper<FooCreatedEvent, EventMetadata>("foo-stream", data = FooCreatedEvent(Foo("any-value")), metadata = mock { }))
+    private fun eventPair() = Pair("""{"data":"{"name":"any-value"}"}""", KinesisEventWrapper<FooCreatedEvent, EventMetadata>("foo-stream", data = FooCreatedEvent("any-value"), metadata = mock { }))
     private fun wrap(vararg kinesisEvents: String): ProcessRecordsInput {
         return mock {
             val eventRecords = kinesisEvents.toList().map { event -> mock<Record> { on { data } doReturn ByteBuffer.wrap(event.toByteArray()) } }

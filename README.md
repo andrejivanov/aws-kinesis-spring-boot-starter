@@ -83,21 +83,36 @@ The event will be marshalled as json using jackson and send to the kinesis strea
 ````
 
 ### 3. Consume Events
-Inject `AwsKinesisInboundGateway` wherever you like and call `listen()`. You need to provide the name of the stream you defined in the application.yml 
-and a event handler that handles your data and metadata.
-```kotlin
-fun <DataType, MetadataType> listen(streamName: String, handler: (DataType, MetadataType) -> Unit)
 
-```
+There are multiple ways for consuming an AWS Kinesis stream.
+In any case, you need to provide the name of the stream you defined in the application.yml, an event handler that handles your data and metadata and the class references of your data and metadata for deserialization.
 
-Example:
-```kotlin
-@Service
-class EventConsumer(private val gateway: AwsKinesisInboundGateway) {
+#### Option 1: Build a listener object and register it
+
+    @Service
+    class Consumer(private val gateway: AwsKinesisInboundGateway) {
     
-    @Scheduled(fixedDelay = (60 * 1000))
-    fun listenForFooEvents() {
-        gateway.listen(FooEvent.STREAM_NAME, { data:FooCreatedEvent, metadata:EventMetadata -> println("Processing Event $event") })
+        @Scheduled(fixedDelay = (60 * 1000))
+        fun registerListener() {
+            val kinesisListener = KinesisListener.build("foo-stream", { data: MyData, metadata: MyMetadata -> println("$data, $metadata") })
+            gateway.register(kinesisListener)
+        }
     }
-}
-```
+
+#### Option 2: Extend the record handler interface
+
+    @Service
+    class MyDataKinesisListener(private val gateway: AwsKinesisInboundGateway): KinesisListener<MyData, MyMetadata> {
+    
+        override fun streamName(): String = "foo-stream"
+        override fun data(): Class<MyData> = MyData::class.java
+        override fun metadata(): Class<MyMetadata> = MyMetadata::class.java
+        override fun handle(data: MyData, metadata: MyMetadata) = println("$data, $metadata")
+    
+        @PostConstruct
+        fun registerMyself() = gateway.register(this)
+    }
+
+
+
+

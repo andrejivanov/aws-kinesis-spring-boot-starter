@@ -19,7 +19,7 @@ class AwsKinesisInboundGatewayTest : AbstractTest() {
 
     val workerFactory: WorkerFactory = mock {
         on {
-            worker(any(), any<EventProcessor<FooCreatedEvent, EventMetadata>>())
+            worker(any(), any<KinesisListener<FooCreatedEvent, EventMetadata>>())
         } doReturn mock<Worker> { }
     }
 
@@ -27,28 +27,29 @@ class AwsKinesisInboundGatewayTest : AbstractTest() {
 
     @Test
     fun `should get client configuration by stream name`() {
-        unit.listen("foo-stream", { _: FooCreatedEvent, _: EventMetadata -> })
+        val eventHandler = { _: FooCreatedEvent, _: EventMetadata -> }
+        unit.register("foo-stream", eventHandler, FooCreatedEvent::class.java, EventMetadata::class.java)
 
         verify(clientProvider).consumerConfig("foo-stream")
     }
 
     @Test
     fun `should get worker by client configuration`() {
-        val handler = { _: FooCreatedEvent, _: EventMetadata -> }
+        val eventHandler = { _: FooCreatedEvent, _: EventMetadata -> }
         val clientConfig: KinesisClientLibConfiguration = mock { }
         whenever(clientProvider.consumerConfig("foo-stream")).thenReturn(clientConfig)
 
-        unit.listen("foo-stream", handler)
+        unit.register("foo-stream", eventHandler, FooCreatedEvent::class.java, EventMetadata::class.java)
 
-        verify(workerFactory).worker(eq(clientConfig), eq(handler))
+        verify(workerFactory).worker(eq(clientConfig), eq(DefaultKinesisListener("foo-stream", FooCreatedEvent::class.java, EventMetadata::class.java, eventHandler)))
     }
 
     @Test
     fun `should run worker`() {
         val worker: Worker = mock { }
-        whenever(workerFactory.worker(any(), any<EventProcessor<*, *>>())).thenReturn(worker)
+        whenever(workerFactory.worker(any(), any<KinesisListener<*, *>>())).thenReturn(worker)
 
-        unit.listen("foo-stream", { _: FooCreatedEvent, _: EventMetadata -> })
+        unit.register("foo-stream", { _: FooCreatedEvent, _: EventMetadata -> }, FooCreatedEvent::class.java, EventMetadata::class.java)
 
         verify(worker).run()
     }

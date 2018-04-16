@@ -7,13 +7,21 @@ class AwsKinesisInboundGateway(private val clientProvider: AwsKinesisClientProvi
 
     private val log = LoggerFactory.getLogger(this.javaClass)
 
-    fun <DataType, MetadataType> listen(streamName: String, handler: (DataType, MetadataType) -> Unit) {
-        log.info("Listening for events on [{}]", streamName)
+    fun <D, M, DClass : Class<D>, MClass : Class<M>> register(streamName: String,
+                                                              eventHandler: (D, M) -> Unit,
+                                                              dataClass: DClass,
+                                                              metadataClass: MClass) {
 
-        val config = clientProvider.consumerConfig(streamName)
+        register(KinesisListener.build(streamName, eventHandler, dataClass, metadataClass))
+    }
+
+    fun <D, M> register(handler: KinesisListener<D, M>) {
+        log.info("Listening for events on [{}]", handler.streamName())
+
+        val config = clientProvider.consumerConfig(handler.streamName())
         val worker = workerFactory.worker(config, handler)
 
-        log.info("Running consumer to process stream [{}]...", streamName)
+        log.info("Running consumer to process stream [{}]...", handler.streamName())
 
         worker.run()
     }
