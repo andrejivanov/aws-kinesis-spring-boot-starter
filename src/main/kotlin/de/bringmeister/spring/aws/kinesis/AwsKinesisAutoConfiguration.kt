@@ -19,10 +19,10 @@ class AwsKinesisAutoConfiguration {
     @ConditionalOnMissingBean
     fun kinesisClientProvider(consumerClientConfigFactory: ConsumerClientConfigFactory,
                               producerClientFactory: ProducerClientFactory,
-                              kinesisCredentialsProviderFactory: AssumeRoleCredentialsProviderFactory,
+                              awsCredentialsProviderFactory: AWSCredentialsProviderFactory,
                               kinesisSettings: AwsKinesisSettings) =
 
-            AwsKinesisClientProvider(consumerClientConfigFactory, producerClientFactory, kinesisCredentialsProviderFactory, kinesisSettings)
+            AwsKinesisClientProvider(consumerClientConfigFactory, producerClientFactory, awsCredentialsProviderFactory, kinesisSettings)
 
     @Bean
     @ConditionalOnMissingBean
@@ -41,9 +41,10 @@ class AwsKinesisAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    fun assumeRoleCredentialsProviderFactory(kinesisSettings: AwsKinesisSettings,
-                                             credentialsProvider: AWSCredentialsProvider): AssumeRoleCredentialsProviderFactory {
-        return STSAssumeRoleCredentialsProviderFactory(credentialsProvider, kinesisSettings)
+    fun credentialsProviderFactory(kinesisSettings: AwsKinesisSettings,
+                                   credentialsProvider: AWSCredentialsProvider): AWSCredentialsProviderFactory {
+
+        return STSAssumeRoleSessionCredentialsProviderFactory(credentialsProvider, kinesisSettings)
     }
 
     @Bean

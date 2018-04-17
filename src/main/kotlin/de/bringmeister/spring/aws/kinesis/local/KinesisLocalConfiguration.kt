@@ -1,10 +1,11 @@
 package de.bringmeister.spring.aws.kinesis.local
 
 import com.amazonaws.auth.AWSCredentials
+import com.amazonaws.auth.AWSCredentialsProvider
 import com.amazonaws.auth.AWSStaticCredentialsProvider
 import com.amazonaws.client.builder.AwsClientBuilder
 import com.amazonaws.services.kinesis.AmazonKinesisClientBuilder
-import de.bringmeister.spring.aws.kinesis.AssumeRoleCredentialsProviderFactory
+import de.bringmeister.spring.aws.kinesis.AWSCredentialsProviderFactory
 import de.bringmeister.spring.aws.kinesis.AwsKinesisSettings
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -17,14 +18,14 @@ class KinesisLocalConfiguration {
 
     @Bean
     @Primary
-    fun credentials() = AWSStaticCredentialsProvider(object : AWSCredentials {
+    fun credentialsProvider() = AWSStaticCredentialsProvider(object : AWSCredentials {
         override fun getAWSAccessKeyId() = "no-key"
         override fun getAWSSecretKey() = "no-passwd"
     })
 
     @Bean
     @Primary
-    fun kinesisCredentialsProvider() = object : AssumeRoleCredentialsProviderFactory {
+    fun kinesisCredentialsProvider() = object : AWSCredentialsProviderFactory {
         override fun credentials(roleToAssume: String) = AWSStaticCredentialsProvider(object : AWSCredentials {
             override fun getAWSAccessKeyId() = "no-key"
             override fun getAWSSecretKey() = "no-passwd"
@@ -37,7 +38,7 @@ class KinesisLocalConfiguration {
 
         val initializer = LocalAwsKinesisStreamInitializer(AmazonKinesisClientBuilder.standard()
                 .withEndpointConfiguration(AwsClientBuilder.EndpointConfiguration(kinesisSettings.kinesisUrl, "local"))
-                .withCredentials(credentials())
+                .withCredentials(credentialsProvider())
                 .build())
 
         kinesisSettings.consumer

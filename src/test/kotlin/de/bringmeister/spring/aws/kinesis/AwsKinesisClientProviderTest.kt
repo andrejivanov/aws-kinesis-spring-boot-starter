@@ -20,17 +20,17 @@ class AwsKinesisClientProviderTest {
     }
 
     val credentialsProvider: AWSCredentialsProvider = mock { }
-    val assumeRoleCredentialsProviderFactory: AssumeRoleCredentialsProviderFactory = mock { }
+    val awsCredentialsProviderFactory: AWSCredentialsProviderFactory = mock { }
 
     val clientProvider = AwsKinesisClientProvider(
             consumerClientConfigFactory = ConsumerClientConfigFactory(credentialsProvider, settings),
             producerClientFactory = ProducerClientFactory(settings),
-            kinesisCredentialsProviderFactory = assumeRoleCredentialsProviderFactory,
+            awsCredentialsProviderFactory = awsCredentialsProviderFactory,
             kinesisSettings = settings)
 
     @Before
     fun setUp() {
-        whenever(assumeRoleCredentialsProviderFactory.credentials(any())).thenReturn(mock { })
+        whenever(awsCredentialsProviderFactory.credentials(any())).thenReturn(mock { })
     }
 
     private fun consumerSettings(streamName: String,
@@ -142,7 +142,7 @@ class AwsKinesisClientProviderTest {
         consumerSettings("any", awsAccountId = "123", iamRole = "name-iam-role")
 
         val kinesisCredentialsProvider = mock<AWSCredentialsProvider> { }
-        whenever(assumeRoleCredentialsProviderFactory.credentials("arn:aws:iam::123:role/name-iam-role")).thenReturn(kinesisCredentialsProvider)
+        whenever(awsCredentialsProviderFactory.credentials("arn:aws:iam::123:role/name-iam-role")).thenReturn(kinesisCredentialsProvider)
 
         val config = clientProvider.consumerConfig("any")
 
@@ -155,7 +155,7 @@ class AwsKinesisClientProviderTest {
 
         clientProvider.producer("any")
 
-        verify(assumeRoleCredentialsProviderFactory).credentials("arn:aws:iam::321:role/bar-iam-role")
+        verify(awsCredentialsProviderFactory).credentials("arn:aws:iam::321:role/bar-iam-role")
     }
 
     @Test
