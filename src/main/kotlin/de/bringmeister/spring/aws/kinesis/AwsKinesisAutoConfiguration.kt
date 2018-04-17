@@ -17,23 +17,12 @@ class AwsKinesisAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    fun kinesisClientProvider(consumerClientConfigFactory: ConsumerClientConfigFactory,
-                              producerClientFactory: ProducerClientFactory,
-                              kinesisCredentialsProviderFactory: AssumeRoleCredentialsProviderFactory,
-                              kinesisSettings: AwsKinesisSettings) =
+    fun clientConfigFactory(credentialsProvider: AWSCredentialsProvider,
+                            kinesisCredentialsProviderFactory: AssumeRoleCredentialsProviderFactory,
+                            kinesisSettings: AwsKinesisSettings) : ClientConfigFactory {
 
-            AwsKinesisClientProvider(consumerClientConfigFactory, producerClientFactory, kinesisCredentialsProviderFactory, kinesisSettings)
-
-    @Bean
-    @ConditionalOnMissingBean
-    fun kinesisConsumerClientConfigFactory(credentialsProvider: AWSCredentialsProvider,
-                                           kinesisSettings: AwsKinesisSettings) =
-
-            ConsumerClientConfigFactory(credentialsProvider, kinesisSettings)
-
-    @Bean
-    @ConditionalOnMissingBean
-    fun kinesisProducerClientFactory(kinesisSettings: AwsKinesisSettings) = ProducerClientFactory(kinesisSettings)
+        return ClientConfigFactory(credentialsProvider, kinesisCredentialsProviderFactory, kinesisSettings)
+    }
 
     @Bean
     @ConditionalOnMissingBean
@@ -53,7 +42,7 @@ class AwsKinesisAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     @ConditionalOnBean(ObjectMapper::class)
-    fun workerFactory(objectMapper: ObjectMapper) = WorkerFactory(objectMapper)
+    fun workerFactory(clientConfigFactory: ClientConfigFactory, objectMapper: ObjectMapper) = WorkerFactory(clientConfigFactory, objectMapper)
 
     @Bean
     @ConditionalOnMissingBean
@@ -62,15 +51,16 @@ class AwsKinesisAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    fun kinesisOutboundGateway(kinesisSettings: AwsKinesisSettings,
-                               clientProvider: AwsKinesisClientProvider,
-                               requestFactory: RequestFactory) = AwsKinesisOutboundGateway(kinesisSettings, clientProvider, requestFactory)
+    fun kinesisClientProvider(awsKinesisSettings: AwsKinesisSettings,
+                              assumeRoleCredentialsProviderFactory: AssumeRoleCredentialsProviderFactory) = KinesisClientProvider(assumeRoleCredentialsProviderFactory, awsKinesisSettings)
 
     @Bean
     @ConditionalOnMissingBean
-    fun kinesisInboundGateway(clientProvider: AwsKinesisClientProvider,
-                              workerFactory: WorkerFactory,
-                              workerStarter: WorkerStarter) = AwsKinesisInboundGateway(clientProvider, workerFactory, workerStarter)
+    fun kinesisOutboundGateway(kinesisClientProvider: KinesisClientProvider,
+                               requestFactory: RequestFactory) = AwsKinesisOutboundGateway(kinesisClientProvider, requestFactory)
 
-
+    @Bean
+    @ConditionalOnMissingBean
+    fun kinesisInboundGateway(workerFactory: WorkerFactory,
+                              workerStarter: WorkerStarter) = AwsKinesisInboundGateway(workerFactory, workerStarter)
 }

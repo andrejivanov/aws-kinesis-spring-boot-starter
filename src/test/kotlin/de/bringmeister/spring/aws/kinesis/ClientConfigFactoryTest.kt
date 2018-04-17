@@ -7,12 +7,11 @@ import com.natpryce.hamkrest.assertion.assertThat
 import com.natpryce.hamkrest.equalTo
 import com.nhaarman.mockito_kotlin.any
 import com.nhaarman.mockito_kotlin.mock
-import com.nhaarman.mockito_kotlin.verify
 import com.nhaarman.mockito_kotlin.whenever
 import org.junit.Before
 import org.junit.Test
 
-class AwsKinesisClientProviderTest {
+class ClientConfigFactoryTest {
 
     val settings = mock<AwsKinesisSettings> {
         on { consumerGroup }.thenReturn("any-consumer-group")
@@ -22,11 +21,11 @@ class AwsKinesisClientProviderTest {
     val credentialsProvider: AWSCredentialsProvider = mock { }
     val assumeRoleCredentialsProviderFactory: AssumeRoleCredentialsProviderFactory = mock { }
 
-    val clientProvider = AwsKinesisClientProvider(
-            consumerClientConfigFactory = ConsumerClientConfigFactory(credentialsProvider, settings),
-            producerClientFactory = ProducerClientFactory(settings),
+    val clientProvider = ClientConfigFactory(
+            credentialsProvider = credentialsProvider,
             kinesisCredentialsProviderFactory = assumeRoleCredentialsProviderFactory,
-            kinesisSettings = settings)
+            kinesisSettings = settings
+    )
 
     @Before
     fun setUp() {
@@ -148,24 +147,4 @@ class AwsKinesisClientProviderTest {
 
         assertThat(config.kinesisCredentialsProvider, equalTo(kinesisCredentialsProvider))
     }
-
-    @Test
-    fun `producer should use assumeRoleCredentialsProviderFactory to obtain kinesis credentials`() {
-        producerSettings("any", awsAccountId = "321", iamRole = "bar-iam-role")
-
-        clientProvider.producer("any")
-
-        verify(assumeRoleCredentialsProviderFactory).credentials("arn:aws:iam::321:role/bar-iam-role")
-    }
-
-    @Test
-    fun `producer should use kinesis endpoint defined in kinesis properties`() {
-        producerSettings("any")
-
-        clientProvider.producer("any")
-
-        verify(settings).kinesisUrl
-        verify(settings).region
-    }
-
 }

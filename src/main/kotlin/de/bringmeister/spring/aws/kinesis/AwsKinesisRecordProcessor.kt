@@ -111,5 +111,3 @@ class AwsKinesisRecordProcessor<D, M>(private val objectMapper: ObjectMapper,
         }
     }
 }
-
-data class RecordProcessorConfiguration(val maxRetries: Int, val backoffTimeInMilliSeconds: Long)
