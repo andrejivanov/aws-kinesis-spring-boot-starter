@@ -18,10 +18,10 @@ class AwsKinesisAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     fun clientConfigFactory(credentialsProvider: AWSCredentialsProvider,
-                            kinesisCredentialsProviderFactory: AssumeRoleCredentialsProviderFactory,
+                            awsCredentialsProviderFactory: AWSCredentialsProviderFactory,
                             kinesisSettings: AwsKinesisSettings) : ClientConfigFactory {
 
-        return ClientConfigFactory(credentialsProvider, kinesisCredentialsProviderFactory, kinesisSettings)
+        return ClientConfigFactory(credentialsProvider, awsCredentialsProviderFactory, kinesisSettings)
     }
 
     @Bean
@@ -30,9 +30,10 @@ class AwsKinesisAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    fun assumeRoleCredentialsProviderFactory(kinesisSettings: AwsKinesisSettings,
-                                             credentialsProvider: AWSCredentialsProvider): AssumeRoleCredentialsProviderFactory {
-        return STSAssumeRoleCredentialsProviderFactory(credentialsProvider, kinesisSettings)
+    fun credentialsProviderFactory(kinesisSettings: AwsKinesisSettings,
+                                   credentialsProvider: AWSCredentialsProvider): AWSCredentialsProviderFactory {
+
+        return STSAssumeRoleSessionCredentialsProviderFactory(credentialsProvider, kinesisSettings)
     }
 
     @Bean
@@ -52,7 +53,7 @@ class AwsKinesisAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     fun kinesisClientProvider(awsKinesisSettings: AwsKinesisSettings,
-                              assumeRoleCredentialsProviderFactory: AssumeRoleCredentialsProviderFactory) = KinesisClientProvider(assumeRoleCredentialsProviderFactory, awsKinesisSettings)
+                              awsCredentialsProviderFactory: AWSCredentialsProviderFactory) = KinesisClientProvider(awsCredentialsProviderFactory, awsKinesisSettings)
 
     @Bean
     @ConditionalOnMissingBean
@@ -63,4 +64,19 @@ class AwsKinesisAutoConfiguration {
     @ConditionalOnMissingBean
     fun kinesisInboundGateway(workerFactory: WorkerFactory,
                               workerStarter: WorkerStarter) = AwsKinesisInboundGateway(workerFactory, workerStarter)
+
+    /**
+     * We provide an empty list of listeners. We need this list in case no
+     * listeners are defined. In this case, we will receive an empty list
+     * by the method below. Otherwise an exception would be thrown.
+     */
+    @Bean
+    fun kinesisListeners(): MutableList<KinesisListener<*, *>> {
+        return mutableListOf()
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    fun kinesisListenerStarter(kinesisListeners: MutableList<KinesisListener<*, *>>,
+                               inboundGateway: AwsKinesisInboundGateway) = KinesisListenerStarter(inboundGateway, kinesisListeners)
 }

@@ -7,6 +7,7 @@ import com.natpryce.hamkrest.assertion.assertThat
 import com.natpryce.hamkrest.equalTo
 import com.nhaarman.mockito_kotlin.any
 import com.nhaarman.mockito_kotlin.mock
+import com.nhaarman.mockito_kotlin.verify
 import com.nhaarman.mockito_kotlin.whenever
 import org.junit.Before
 import org.junit.Test
@@ -19,17 +20,12 @@ class ClientConfigFactoryTest {
     }
 
     val credentialsProvider: AWSCredentialsProvider = mock { }
-    val assumeRoleCredentialsProviderFactory: AssumeRoleCredentialsProviderFactory = mock { }
-
-    val clientProvider = ClientConfigFactory(
-            credentialsProvider = credentialsProvider,
-            kinesisCredentialsProviderFactory = assumeRoleCredentialsProviderFactory,
-            kinesisSettings = settings
-    )
+    val awsCredentialsProviderFactory: AWSCredentialsProviderFactory = mock { }
+    val clientProvider = ClientConfigFactory(credentialsProvider, awsCredentialsProviderFactory, settings)
 
     @Before
     fun setUp() {
-        whenever(assumeRoleCredentialsProviderFactory.credentials(any())).thenReturn(mock { })
+        whenever(awsCredentialsProviderFactory.credentials(any())).thenReturn(mock { })
     }
 
     private fun consumerSettings(streamName: String,
@@ -54,18 +50,6 @@ class ClientConfigFactoryTest {
             on { this.metricsLevel }.thenReturn(metricsLevel)
         }
         whenever(settings.consumer).thenReturn(mutableListOf(consumerSettings))
-    }
-
-    private fun producerSettings(streamName: String,
-                                 iamRole: String = "any-role",
-                                 awsAccountId: String = "any-account") {
-
-        val producerSettings = mock<ProducerSettings> {
-            on { this.streamName }.thenReturn(streamName)
-            on { this.iamRoleToAssume }.thenReturn(iamRole)
-            on { this.awsAccountId }.thenReturn(awsAccountId)
-        }
-        whenever(settings.producer).thenReturn(mutableListOf(producerSettings))
     }
 
     @Test
@@ -141,7 +125,7 @@ class ClientConfigFactoryTest {
         consumerSettings("any", awsAccountId = "123", iamRole = "name-iam-role")
 
         val kinesisCredentialsProvider = mock<AWSCredentialsProvider> { }
-        whenever(assumeRoleCredentialsProviderFactory.credentials("arn:aws:iam::123:role/name-iam-role")).thenReturn(kinesisCredentialsProvider)
+        whenever(awsCredentialsProviderFactory.credentials("arn:aws:iam::123:role/name-iam-role")).thenReturn(kinesisCredentialsProvider)
 
         val config = clientProvider.consumerConfig("any")
 

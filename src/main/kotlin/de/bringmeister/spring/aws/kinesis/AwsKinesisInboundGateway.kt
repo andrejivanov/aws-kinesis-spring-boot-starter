@@ -18,6 +18,6 @@ class AwsKinesisInboundGateway(private val workerFactory: WorkerFactory,
     fun register(handler: KinesisListener<*, *>) {
         val worker = workerFactory.worker(handler)
         workerStarter.start(worker)
-        log.info("Started AWS Kinesis listener. [stream={}, expecting={}]...", handler.streamName(), handler.data().simpleName)
+        log.info("Started AWS Kinesis listener. [stream={}, expecting={}]", handler.streamName(), handler.data().simpleName)
     }
 }

@@ -10,7 +10,7 @@ import com.amazonaws.services.kinesis.AmazonKinesisClientBuilder
  * means, we can get a client for a specific stream in order to send messages
  * to this stream.
  */
-class KinesisClientProvider(private val credentialFactory: AssumeRoleCredentialsProviderFactory,
+class KinesisClientProvider(private val credentialFactory: AWSCredentialsProviderFactory,
                             private val kinesisSettings: AwsKinesisSettings) {
 
     private val kinesisClients : Map<String, AmazonKinesis>

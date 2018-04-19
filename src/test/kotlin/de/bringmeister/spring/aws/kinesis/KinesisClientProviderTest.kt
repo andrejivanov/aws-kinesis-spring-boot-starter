@@ -10,7 +10,7 @@ import org.junit.Test
 
 class KinesisClientProviderTest {
 
-    val assumeRoleCredentialsProviderFactory: AssumeRoleCredentialsProviderFactory = mock { }
+    val assumeRoleCredentialsProviderFactory: AWSCredentialsProviderFactory = mock { }
     var clientProvider : KinesisClientProvider = mock {  }
 
     @Before

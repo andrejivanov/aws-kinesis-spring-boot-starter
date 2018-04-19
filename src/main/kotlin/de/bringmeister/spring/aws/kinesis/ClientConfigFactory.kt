@@ -7,14 +7,14 @@ import java.net.InetAddress
 import java.util.UUID
 
 class ClientConfigFactory(private val credentialsProvider: AWSCredentialsProvider,
-                          private val kinesisCredentialsProviderFactory: AssumeRoleCredentialsProviderFactory,
+                          private val awsCredentialsProviderFactory: AWSCredentialsProviderFactory,
                           private val kinesisSettings: AwsKinesisSettings) {
 
     fun consumerConfig(streamName: String): KinesisClientLibConfiguration {
 
         val consumerSettings = kinesisSettings.consumer.first { it.streamName == streamName }
         val roleToAssume = "arn:aws:iam::${consumerSettings.awsAccountId}:role/${consumerSettings.iamRoleToAssume}"
-        val credentials = kinesisCredentialsProviderFactory.credentials(roleToAssume)
+        val credentials = awsCredentialsProviderFactory.credentials(roleToAssume)
         val workerId = InetAddress.getLocalHost().canonicalHostName + ":" + UUID.randomUUID()
         val applicationName = "${kinesisSettings.consumerGroup}_$streamName"
 
