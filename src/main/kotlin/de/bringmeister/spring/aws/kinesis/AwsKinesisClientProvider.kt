@@ -7,11 +7,11 @@ import com.amazonaws.services.kinesis.AmazonKinesisClientBuilder
 import com.amazonaws.services.kinesis.clientlibrary.lib.worker.InitialPositionInStream.TRIM_HORIZON
 import com.amazonaws.services.kinesis.clientlibrary.lib.worker.KinesisClientLibConfiguration
 import java.net.InetAddress
-import java.util.*
+import java.util.UUID
 
 class AwsKinesisClientProvider(private val consumerClientConfigFactory: ConsumerClientConfigFactory,
                                private val producerClientFactory: ProducerClientFactory,
-                               private val kinesisCredentialsProviderFactory: AssumeRoleCredentialsProviderFactory,
+                               private val awsCredentialsProviderFactory: AWSCredentialsProviderFactory,
                                private val kinesisSettings: AwsKinesisSettings) {
 
     fun producer(streamName: String): AmazonKinesis {
@@ -24,7 +24,7 @@ class AwsKinesisClientProvider(private val consumerClientConfigFactory: Consumer
     }
 
     private fun credentials(streamSettings: StreamSettings): AWSCredentialsProvider {
-        return kinesisCredentialsProviderFactory.credentials(roleToAssume(streamSettings))
+        return awsCredentialsProviderFactory.credentials(roleToAssume(streamSettings))
     }
 
     private fun producerStreamSettings(streamName: String) = kinesisSettings.producer.first { it.streamName == streamName }
