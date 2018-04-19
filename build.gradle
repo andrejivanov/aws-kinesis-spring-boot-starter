@@ -44,6 +44,7 @@ configurations.all {
         force 'javax.validation:validation-api:2.0.1.Final'
         force 'com.fasterxml.jackson.core:jackson-databind:2.9.2'
         force 'com.fasterxml.jackson.core:jackson-core:2.9.2'
+        force 'org.assertj:assertj-core:3.9.1'
     }
 }
 
@@ -88,6 +89,7 @@ dependencies {
     testCompile "org.testcontainers:testcontainers:1.6.0"
     testCompile "org.springframework.boot:spring-boot-starter-log4j2:1.5.8.RELEASE"
     testCompile "com.fasterxml.jackson.module:jackson-module-kotlin:${versions.jackson}"
+    testCompile "org.assertj:assertj-core:3.9.1"
 }
 
 task sourceJar(type: Jar) {

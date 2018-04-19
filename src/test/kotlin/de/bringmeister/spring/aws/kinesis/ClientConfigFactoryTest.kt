@@ -12,7 +12,7 @@ import com.nhaarman.mockito_kotlin.whenever
 import org.junit.Before
 import org.junit.Test
 
-class AwsKinesisClientProviderTest {
+class ClientConfigFactoryTest {
 
     val settings = mock<AwsKinesisSettings> {
         on { consumerGroup }.thenReturn("any-consumer-group")
@@ -21,12 +21,7 @@ class AwsKinesisClientProviderTest {
 
     val credentialsProvider: AWSCredentialsProvider = mock { }
     val awsCredentialsProviderFactory: AWSCredentialsProviderFactory = mock { }
-
-    val clientProvider = AwsKinesisClientProvider(
-            consumerClientConfigFactory = ConsumerClientConfigFactory(credentialsProvider, settings),
-            producerClientFactory = ProducerClientFactory(settings),
-            awsCredentialsProviderFactory = awsCredentialsProviderFactory,
-            kinesisSettings = settings)
+    val clientProvider = ClientConfigFactory(credentialsProvider, awsCredentialsProviderFactory, settings)
 
     @Before
     fun setUp() {
@@ -55,18 +50,6 @@ class AwsKinesisClientProviderTest {
             on { this.metricsLevel }.thenReturn(metricsLevel)
         }
         whenever(settings.consumer).thenReturn(mutableListOf(consumerSettings))
-    }
-
-    private fun producerSettings(streamName: String,
-                                 iamRole: String = "any-role",
-                                 awsAccountId: String = "any-account") {
-
-        val producerSettings = mock<ProducerSettings> {
-            on { this.streamName }.thenReturn(streamName)
-            on { this.iamRoleToAssume }.thenReturn(iamRole)
-            on { this.awsAccountId }.thenReturn(awsAccountId)
-        }
-        whenever(settings.producer).thenReturn(mutableListOf(producerSettings))
     }
 
     @Test
@@ -148,24 +131,4 @@ class AwsKinesisClientProviderTest {
 
         assertThat(config.kinesisCredentialsProvider, equalTo(kinesisCredentialsProvider))
     }
-
-    @Test
-    fun `producer should use assumeRoleCredentialsProviderFactory to obtain kinesis credentials`() {
-        producerSettings("any", awsAccountId = "321", iamRole = "bar-iam-role")
-
-        clientProvider.producer("any")
-
-        verify(awsCredentialsProviderFactory).credentials("arn:aws:iam::321:role/bar-iam-role")
-    }
-
-    @Test
-    fun `producer should use kinesis endpoint defined in kinesis properties`() {
-        producerSettings("any")
-
-        clientProvider.producer("any")
-
-        verify(settings).kinesisUrl
-        verify(settings).region
-    }
-
 }

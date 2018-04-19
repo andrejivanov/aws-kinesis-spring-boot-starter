@@ -4,9 +4,14 @@ import com.amazonaws.services.kinesis.metrics.interfaces.MetricsLevel
 import com.natpryce.hamkrest.assertion.assertThat
 import com.natpryce.hamkrest.equalTo
 import org.junit.Test
+import org.junit.runner.RunWith
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.TestPropertySource
+import org.springframework.test.context.junit4.SpringRunner
 
+@RunWith(SpringRunner::class)
+@SpringBootTest(classes = [TestConfiguration::class])
 @TestPropertySource(properties = [
     "aws.kinesis.kinesisUrl=http://example.org/kinesis",
     "aws.kinesis.region=us-east-1",
@@ -15,7 +20,7 @@ import org.springframework.test.context.TestPropertySource
     "aws.kinesis.consumer[0].dynamoDBSettings.leaseTableReadCapacity=5",
     "aws.kinesis.consumer[0].dynamoDBSettings.leaseTableWriteCapacity=8"
 ])
-class AwsKinesisCustomSettingsTest : AbstractTest() {
+class AwsKinesisCustomSettingsTest {
 
     @Autowired
     lateinit var settings: AwsKinesisSettings

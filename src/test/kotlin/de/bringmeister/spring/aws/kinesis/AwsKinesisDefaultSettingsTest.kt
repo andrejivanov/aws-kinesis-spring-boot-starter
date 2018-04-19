@@ -4,9 +4,15 @@ import com.amazonaws.services.kinesis.metrics.interfaces.MetricsLevel
 import com.natpryce.hamkrest.assertion.assertThat
 import com.natpryce.hamkrest.equalTo
 import org.junit.Test
+import org.junit.runner.RunWith
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.test.context.junit4.SpringRunner
 
-class AwsKinesisDefaultSettingsTest : AbstractTest() {
+@RunWith(SpringRunner::class)
+@SpringBootTest(classes = [TestConfiguration::class])
+class AwsKinesisDefaultSettingsTest {
 
     @Autowired
     lateinit var settings: AwsKinesisSettings
@@ -25,3 +31,6 @@ class AwsKinesisDefaultSettingsTest : AbstractTest() {
         assertThat(settings.consumer[0].dynamoDBSettings.leaseTableWriteCapacity, equalTo(1))
     }
 }
+
+@EnableConfigurationProperties(AwsKinesisSettings::class)
+class TestConfiguration
