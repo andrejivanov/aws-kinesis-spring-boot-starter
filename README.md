@@ -15,7 +15,7 @@ repositories {
     ...
     maven { url 'https://jitpack.io' }
 }
-compile 'com.github.bringmeister:aws-kinesis-spring-boot-starter:v0.0.2'
+compile 'com.github.bringmeister:aws-kinesis-spring-boot-starter:v0.0.5'
 ```
 
 ## Configuration
