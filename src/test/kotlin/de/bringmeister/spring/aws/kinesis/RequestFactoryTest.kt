@@ -25,8 +25,7 @@ class RequestFactoryTest {
     @Test
     fun `should serialize message and meta data`() {
         val request = requestFactory.request(event)
-        val data = request.data
-        val content = String(data.array())
+        val content = String(request.data.array())
         assertThat(content).isEqualTo("{\"streamName\":\"foo-stream\",\"data\":{\"foo\":\"any-value\"},\"metadata\":{\"sender\":\"test\"}}")
     }
 }

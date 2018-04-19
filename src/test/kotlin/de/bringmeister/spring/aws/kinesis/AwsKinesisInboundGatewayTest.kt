@@ -9,7 +9,7 @@ import org.junit.Test
 
 class AwsKinesisInboundGatewayTest {
 
-    val workerMock = mock<Worker> {  }
+    val worker = mock<Worker> {  }
     val eventHandler = { _: FooCreatedEvent, _: EventMetadata -> }
     val kinesisListener = object : KinesisListener<FooCreatedEvent, EventMetadata> {
         override fun data(): Class<FooCreatedEvent> = FooCreatedEvent::class.java
@@ -22,7 +22,7 @@ class AwsKinesisInboundGatewayTest {
     val workerFactory: WorkerFactory = mock {
         on {
             worker(any<KinesisListener<FooCreatedEvent, EventMetadata>>())
-        } doReturn workerMock
+        } doReturn worker
     }
 
     val workerStarter: WorkerStarter = mock {  }
@@ -38,7 +38,7 @@ class AwsKinesisInboundGatewayTest {
     @Test
     fun `when registering a lambda it should run worker`() {
         inboundGateway.register("foo-stream", eventHandler, FooCreatedEvent::class.java, EventMetadata::class.java)
-        verify(workerStarter).start(workerMock)
+        verify(workerStarter).start(worker)
     }
 
     @Test
@@ -50,6 +50,6 @@ class AwsKinesisInboundGatewayTest {
     @Test
     fun `when registering a listener instance it should run worker`() {
         inboundGateway.register(kinesisListener)
-        verify(workerStarter).start(workerMock)
+        verify(workerStarter).start(worker)
     }
 }
