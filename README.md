@@ -1,14 +1,24 @@
-# aws-kinesis-spring-boot-starter
+aws-kinesis-spring-boot-starter
+===============================
+
 [![Build Status](https://img.shields.io/travis/bringmeister/aws-kinesis-spring-boot-starter/master.svg)](https://travis-ci.org/bringmeister/aws-kinesis-spring-boot-starter)
 [![Coverage Status](https://img.shields.io/coveralls/bringmeister/aws-kinesis-spring-boot-starter/master.svg)](https://coveralls.io/r/bringmeister/aws-kinesis-spring-boot-starter)
 [![Release](https://img.shields.io/github/release/bringmeister/aws-kinesis-spring-boot-starter.svg)](https://github.com/bringmeister/aws-kinesis-spring-boot-starter/releases)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/bringmeister/aws-kinesis-spring-boot-starter/master/LICENSE)
 
 ## Dependencies
+
 - Spring 4.3.0 or higher
 - [Jackson](https://github.com/FasterXML/jackson)
 
+## Notes
+
+This library is written in Kotlin. 
+However, it's perfectly **compatible with Java**. 
+Below you will find examples for both languages.
+
 ## Installation
+
 Add the following dependency to your project:
 ```
 repositories {
@@ -18,12 +28,13 @@ repositories {
 compile 'com.github.bringmeister:aws-kinesis-spring-boot-starter:v0.0.5'
 ```
 
-## Configuration
-### 1. Define event streams in application.yml
+**Note:** See above for the latest version available!
 
-Configure the streams you want to consume and/or publish to in your application.yml
-by providing the stream name, the id of the aws account this streams belongs to and 
-iam role that allows you to read and/or write to the stream.
+## Configuration
+
+Configure the streams you want to consume and/or publish to in your `application.yml`.
+Provide the stream name, the ID of the AWS account this streams belongs to and
+IAM role that allows you to read and/or write to the stream.
 ```
 aws:
   kinesis:
@@ -49,70 +60,88 @@ aws:
 ```
 
 ## Usage
-aws-kinesis-spring-boot-starter provides two spring-beans for publishing and consuming of event streams:
-- `de.bringmeister.spring.aws.kinesis.AwsKinesisInboundGateway`
-- `de.bringmeister.spring.aws.kinesis.AwsKinesisOutboundGateway`
 
-### 2. Publish Events
-Inject `AwsKinesisOutboundGateway`-bean wherever you like and pass stream-name, event payload (data) and event metadata to the `send()`-method.
-```kotlin
-fun <DataType, MetadataType> send(streamName: String, data: DataType, metadata: MetadataType)
-```
+### Publishing messages
 
-Example:
-```kotlin
+Inject the `AwsKinesisOutboundGateway` wherever you like and pass stream name, data (the actual payload) and metadata to the `send()`-method.
+
+Java example:
+
+```Java
 @Service
-class EventProducer(private val gateway: AwsKinesisOutboundGateway) {
-    fun sendAnyFooEvent() {        
-        gateway.send("foo-stream", data = FooCreatedEvent(foo = "anything"), metadata = EventMetadata(occurredAt = OffsetDateTime.now()))
+public class MyService {
+
+    private final AwsKinesisOutboundGateway gateway;
+
+    public MyService(AwsKinesisOutboundGateway gateway) {
+        this.gateway = gateway;
+    }
+
+    public void sendMyMessage() {
+        gateway.send("my-stream", new MyMessage("my content"), new MyMetadata("my metadata")); 
     }
 }
 ```
 
-The event will be marshalled as json using jackson and send to the kinesis stream using the credentials defined in the application.yml.
+Kotlin example:
+
+```Kotlin
+@Service
+class MyService(private val gateway: AwsKinesisOutboundGateway) {
+    fun sendMyMessage() {        
+        gateway.send("my-stream", MyMessage("my content"), MyMetadata("my metadata"))
+    }
+}
+```
+
+The event will be marshalled as JSON using Jackson and send to the Kinesis stream using the credentials defined in the `application.yml`.
 
 ````
 {
-    "data":{
-        "foo":"anything"
-    },
-    metadata:{
-        "occurredAt":"2018-04-13T10:15:30+01:00"
-    }
+    "data":"my content",
+    "metadata":"my metadata"
 }
 ````
 
-### 3. Consume Events
+### Consuming messages
 
-There are multiple ways for consuming an AWS Kinesis stream.
-In any case, you need to provide the name of the stream you defined in the application.yml, an event handler that handles your data and metadata and the class references of your data and metadata for deserialization.
+In order to consume messages, you need to extend the `KinesisListener` interface.
+Your class must be a Spring Bean annotated withg `@Service` or `@Component`.
+It will be picked-up automatically and registered as a listener.
 
-#### Option 1: Build a listener object and register it
+Java example:
 
-    @Service
-    class Consumer(private val gateway: AwsKinesisInboundGateway) {
-    
-        @Scheduled(fixedDelay = (60 * 1000))
-        fun registerListener() {
-            val kinesisListener = KinesisListener.build("foo-stream", { data: MyData, metadata: MyMetadata -> println("$data, $metadata") })
-            gateway.register(kinesisListener)
-        }
+```Java
+@Service
+public class MyKinesisListener implements KinesisListener<MyData, MyMetadata> {
+
+    public String streamName() {
+        return "foo-stream";
     }
 
-#### Option 2: Extend the record handler interface
-
-You can extend the `KinesisListener` interface.
-If your class is annotated with `@Service` or `@Component` it will be picked-up automatically and registered as a listener.
-
-    @Service
-    class MyDataKinesisListener: KinesisListener<MyData, MyMetadata> {
-    
-        override fun streamName(): String = "foo-stream"
-        override fun data(): Class<MyData> = MyData::class.java
-        override fun metadata(): Class<MyMetadata> = MyMetadata::class.java
-        override fun handle(data: MyData, metadata: MyMetadata) = println("$data, $metadata")
+    public Class<MyData> data() {
+        return MyData.class;
     }
 
+    public Class<MyMetadata> metadata() {
+        return MyMetadata.class;
+    }
 
+    public void handle(MyData data, MyMetadata metadata) {
+        System.out.println(data + ", " + metadata);
+    }
+}
+```
 
+Kotlin example:
 
+```Kotlin
+@Service
+class MyKinesisListener: KinesisListener<MyData, MyMetadata> {
+
+    override fun streamName(): String = "foo-stream"
+    override fun data(): Class<MyData> = MyData::class.java
+    override fun metadata(): Class<MyMetadata> = MyMetadata::class.java
+    override fun handle(data: MyData, metadata: MyMetadata) = println("$data, $metadata")
+}
+```
