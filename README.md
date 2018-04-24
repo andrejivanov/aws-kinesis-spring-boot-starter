@@ -25,7 +25,7 @@ repositories {
     ...
     maven { url 'https://jitpack.io' }
 }
-compile 'com.github.bringmeister:aws-kinesis-spring-boot-starter:v0.0.5'
+compile "com.github.bringmeister:aws-kinesis-spring-boot-starter:$version"
 ```
 
 **Note:** See above for the latest version available!
@@ -38,7 +38,7 @@ IAM role that allows you to read and/or write to the stream.
 ```
 aws:
   kinesis:
-    consumerGroup: example-service
+    consumerGroup: example-service # required only for consuming
     kinesisUrl: "https://kinesis.eu-central-1.amazonaws.com" #optional
     region: eu-cental-1 #optional
     consumer:
