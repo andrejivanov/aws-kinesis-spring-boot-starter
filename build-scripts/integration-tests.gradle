@@ -23,5 +23,4 @@ task integrationTest(type: Test, dependsOn: jar) {
     outputs.upToDateWhen { false }
 }
 
-project.tasks.findByName('check').dependsOn('integrationTest')
 project.tasks.findByName('integrationTest').mustRunAfter('test')
