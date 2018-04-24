@@ -27,6 +27,7 @@ import java.nio.ByteBuffer
 
 class AwsKinesisRecordProcessorTest {
 
+    val anyEvent = mock<KinesisEventWrapper<FooCreatedEvent, EventMetadata>> { }
     val eventType = mock<JavaType> { }
     val typeFactory: TypeFactory = mock {
         on { constructParametricType(any(), any<Class<*>>()) } doReturn eventType
@@ -34,6 +35,7 @@ class AwsKinesisRecordProcessorTest {
 
     val objectMapper = mock<ObjectMapper> {
         on { typeFactory } doReturn typeFactory
+        on { readValue<KinesisEventWrapper<FooCreatedEvent, EventMetadata>>(any<String>(), any<JavaType>())} doReturn anyEvent
     }
 
     val streamCheckpointer = mock<IRecordProcessorCheckpointer> {}
