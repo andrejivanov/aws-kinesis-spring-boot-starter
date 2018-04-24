@@ -8,6 +8,7 @@ import org.junit.runner.RunWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.junit4.SpringRunner
 
 @RunWith(SpringRunner::class)
@@ -22,6 +23,23 @@ class AwsKinesisDefaultSettingsTest {
         assertThat(settings.kinesisUrl, equalTo("http://localhost:14567"))
         assertThat(settings.region, equalTo("local"))
     }
+}
+
+@RunWith(SpringRunner::class)
+@SpringBootTest(classes = [TestConfiguration::class])
+@ActiveProfiles("producer")
+class AwsKinesisProducerSettingsTest {
+
+}
+
+
+@RunWith(SpringRunner::class)
+@SpringBootTest(classes = [TestConfiguration::class])
+@ActiveProfiles("consumer")
+class AwsKinesisDefaultConsumerSettingsTest {
+
+    @Autowired
+    lateinit var settings: AwsKinesisSettings
 
     @Test
     fun `should use default consumer settings`() {

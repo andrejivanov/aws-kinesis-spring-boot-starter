@@ -10,7 +10,6 @@ class AwsKinesisSettings {
     var region = "eu-central-1"
     var kinesisUrl = "https://kinesis.eu-central-1.amazonaws.com"
 
-    @NotNull
     lateinit var consumerGroup: String
 
     @NotNull
