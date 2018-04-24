@@ -21,7 +21,7 @@ import org.springframework.test.context.junit4.SpringRunner
 import org.testcontainers.containers.GenericContainer
 import java.util.concurrent.CountDownLatch
 
-@ActiveProfiles("kinesis-local")
+@ActiveProfiles("kinesis-local", "consumer", "producer")
 @SpringBootTest(classes = [
     TestListener::class,
     JacksonConfiguration::class,
