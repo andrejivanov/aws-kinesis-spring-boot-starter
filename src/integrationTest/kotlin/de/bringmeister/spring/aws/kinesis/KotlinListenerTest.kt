@@ -8,7 +8,7 @@ import de.bringmeister.spring.aws.kinesis.AwsKinesisOutboundGateway
 import de.bringmeister.spring.aws.kinesis.EventMetadata
 import de.bringmeister.spring.aws.kinesis.FooCreatedEvent
 import de.bringmeister.spring.aws.kinesis.JacksonConfiguration
-import de.bringmeister.spring.aws.kinesis.KinesisListener
+import de.bringmeister.spring.aws.kinesis.KotlinTestListener
 import de.bringmeister.spring.aws.kinesis.local.KinesisLocalConfiguration
 import org.junit.ClassRule
 import org.junit.Test
@@ -23,14 +23,14 @@ import java.util.concurrent.CountDownLatch
 
 @ActiveProfiles("kinesis-local", "consumer", "producer")
 @SpringBootTest(classes = [
-    TestListener::class,
+    KotlinTestListener::class,
     JacksonConfiguration::class,
     JacksonAutoConfiguration::class,
     AwsKinesisAutoConfiguration::class,
     KinesisLocalConfiguration::class
 ])
 @RunWith(SpringRunner::class)
-class KinesisGatewayIntegrationTest {
+class KotlinListenerTest {
 
     @Autowired
     lateinit var outbound: AwsKinesisOutboundGateway
@@ -64,16 +64,8 @@ class KinesisGatewayIntegrationTest {
 
         latch.await() // wait for event-listener thread to process event
 
-        // If we come to this point, the latch was counted down!
+        // If we come to this point, the LATCH was counted down!
         // This means the event has been consumed - test succeeded!
     }
 }
 
-class TestListener : KinesisListener<FooCreatedEvent, EventMetadata> {
-    override fun data(): Class<FooCreatedEvent> = FooCreatedEvent::class.java
-    override fun metadata(): Class<EventMetadata> = EventMetadata::class.java
-    override fun streamName(): String = "foo-event-stream"
-    override fun handle(data: FooCreatedEvent, metadata: EventMetadata) {
-        KinesisGatewayIntegrationTest.latch.countDown()
-    }
-}

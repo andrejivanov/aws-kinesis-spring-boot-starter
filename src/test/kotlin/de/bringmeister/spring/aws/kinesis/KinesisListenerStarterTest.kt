@@ -28,8 +28,6 @@ class KinesisListenerStarterTest {
 }
 
 class TestListener : KinesisListener<FooCreatedEvent, EventMetadata> {
-    override fun data(): Class<FooCreatedEvent> = FooCreatedEvent::class.java
-    override fun metadata(): Class<EventMetadata> = EventMetadata::class.java
     override fun streamName(): String = "foo-event-stream"
     override fun handle(data: FooCreatedEvent, metadata: EventMetadata) {
         // empty

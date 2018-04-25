@@ -10,13 +10,11 @@ import com.amazonaws.services.kinesis.clientlibrary.types.InitializationInput
 import com.amazonaws.services.kinesis.clientlibrary.types.ProcessRecordsInput
 import com.amazonaws.services.kinesis.clientlibrary.types.ShutdownInput
 import com.amazonaws.services.kinesis.model.Record
-import com.fasterxml.jackson.databind.JavaType
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.type.TypeFactory
+import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.nhaarman.mockito_kotlin.any
 import com.nhaarman.mockito_kotlin.doReturn
 import com.nhaarman.mockito_kotlin.doThrow
-import com.nhaarman.mockito_kotlin.eq
 import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.times
 import com.nhaarman.mockito_kotlin.verify
@@ -27,162 +25,106 @@ import java.nio.ByteBuffer
 
 class AwsKinesisRecordProcessorTest {
 
-    val anyEvent = mock<KinesisEventWrapper<FooCreatedEvent, EventMetadata>> { }
-    val eventType = mock<JavaType> { }
-    val typeFactory: TypeFactory = mock {
-        on { constructParametricType(any(), any<Class<*>>()) } doReturn eventType
-    }
-
-    val objectMapper = mock<ObjectMapper> {
-        on { typeFactory } doReturn typeFactory
-        on { readValue<KinesisEventWrapper<FooCreatedEvent, EventMetadata>>(any<String>(), any<JavaType>())} doReturn anyEvent
-    }
-
+    val messageJson = """{"streamName":"foo-event-stream","data":{"foo":"any-field"},"metadata":{"sender":"test"}}"""
+    val mapper = ObjectMapper().registerModule(KotlinModule())
+    val recordMapper = ReflectionBasedRecordMapper(mapper)
     val streamCheckpointer = mock<IRecordProcessorCheckpointer> {}
-    val configuration = mock<RecordProcessorConfiguration> {
-        on { maxRetries } doReturn 1
-        on { backoffTimeInMilliSeconds } doReturn 1
+    val configuration = RecordProcessorConfiguration(2, 1)
+    var handlerMock = mock<(FooCreatedEvent, EventMetadata) -> Unit> {  }
+    var kinesisListener = object : KinesisListener<FooCreatedEvent, EventMetadata> {
+        override fun streamName(): String = "foo-event-stream"
+        override fun handle(data: FooCreatedEvent, metadata: EventMetadata) {
+            handlerMock.invoke(data, metadata)
+        }
     }
 
-    val handler = mock<KinesisListener<FooCreatedEvent, EventMetadata>> {
-        on { this.data() } doReturn FooCreatedEvent::class.java
-        on { this.metadata() } doReturn EventMetadata::class.java
-    }
-
-    val unit = AwsKinesisRecordProcessor(objectMapper, configuration, handler)
+    val recordProcessor = AwsKinesisRecordProcessor(recordMapper, configuration, kinesisListener)
 
     @Before
     fun setUp() {
+
         val initializationInput = mock<InitializationInput> {
             on { shardId }.thenReturn("any-shard")
         }
-        unit.initialize(initializationInput)
+
+        recordProcessor.initialize(initializationInput)
     }
 
     @Test
-    fun `should deserialize one record`() {
-        val kinesisEvent = """{"data":"{"name":"any-value"}"}"""
+    fun `should invoke Kinesis listener for each record`() {
 
-        unit.processRecords(wrap(kinesisEvent))
+        val record1 = wrap(messageJson)
+        val record2 = wrap(messageJson)
 
-        verify(objectMapper).readValue<KinesisEventWrapper<FooCreatedEvent, EventMetadata>>(kinesisEvent, eventType)
-    }
+        recordProcessor.processRecords(record1)
+        recordProcessor.processRecords(record2)
 
-    @Test
-    fun `should deserialize one record with metadata`() {
-        val kinesisEvent = """{"metadata":"{"anything":"any-metadata"}", "data":"{"name":"any-value"}"}"""
-
-        unit.processRecords(wrap(kinesisEvent))
-
-        verify(objectMapper).readValue<KinesisEventWrapper<FooCreatedEvent, EventMetadata>>(kinesisEvent, eventType)
-    }
-
-    @Test
-    fun `should deserialize all records`() {
-        val oneKinesisEvent = """{"data":"{"name":"any-value"}"}"""
-        val anotherKinesisEvent = """{"data":"{"name":"any-other-value"}"}"""
-
-        unit.processRecords(wrap(oneKinesisEvent, anotherKinesisEvent))
-
-        verify(objectMapper).readValue<KinesisEventWrapper<FooCreatedEvent, EventMetadata>>(oneKinesisEvent, eventType)
-        verify(objectMapper).readValue<KinesisEventWrapper<FooCreatedEvent, EventMetadata>>(anotherKinesisEvent, eventType)
-    }
-
-    @Test
-    fun `should delegate kinesis event payload to event handler`() {
-        val (eventJson, event) = eventPair()
-        whenever(objectMapper.readValue<KinesisEventWrapper<FooCreatedEvent, EventMetadata>>(eventJson, eventType)).thenReturn(event)
-
-        unit.processRecords(wrap(eventJson))
-
-        verify(handler).handle(event.data, event.metadata)
-    }
-
-    @Test
-    fun `should delegate all kinesis event payloads to event handler`() {
-        val (firstEventJson, firstEvent) = eventPair()
-        val (secondEventJson, secondEvent) = Pair("""{"data":"{"name":"other-value"}"}""", KinesisEventWrapper<FooCreatedEvent, EventMetadata>(streamName = "foo-stream", data = FooCreatedEvent("other-value"), metadata = mock { }))
-        whenever(objectMapper.readValue<KinesisEventWrapper<FooCreatedEvent, EventMetadata>>(firstEventJson, eventType)).thenReturn(firstEvent)
-        whenever(objectMapper.readValue<KinesisEventWrapper<FooCreatedEvent, EventMetadata>>(secondEventJson, eventType)).thenReturn(secondEvent)
-
-        unit.processRecords(wrap(firstEventJson, secondEventJson))
-
-        verify(handler).handle(firstEvent.data, firstEvent.metadata)
-        verify(handler).handle(secondEvent.data, secondEvent.metadata)
+        verify(handlerMock, times(2)).invoke(FooCreatedEvent("any-field"), EventMetadata("test"))
+        verify(streamCheckpointer, times(2)).checkpoint()
     }
 
     @Test
     fun `should retry processing on exception`() {
-        val (eventJson, event) = eventPair()
-        whenever(objectMapper.readValue<KinesisEventWrapper<FooCreatedEvent, EventMetadata>>(eq(eventJson), any<JavaType>())).thenReturn(event)
-        whenever(configuration.maxRetries).thenReturn(2)
-        whenever(handler.handle(event.data, event.metadata))
-                .doThrow(RuntimeException::class)
-                .then {  } // stop throwing
 
-        unit.processRecords(wrap(eventJson))
+        whenever(handlerMock.invoke(any(), any()))
+            .doThrow(RuntimeException::class)
+            .then {  } // stop throwing
 
-        verify(handler, times(2)).handle(event.data, event.metadata)
+        val record = wrap(messageJson)
+        recordProcessor.processRecords(record)
+
+        verify(handlerMock, times(2)).invoke(any(), any()) // handler fails, so it's retried 2 times
+        verify(streamCheckpointer).checkpoint() // however, we checkpoint only once after success
     }
 
     @Test
-    fun `should checkpoint after processing event batch`() {
-        val (eventJson, event) = eventPair()
-        whenever(objectMapper.readValue<KinesisEventWrapper<FooCreatedEvent, EventMetadata>>(eventJson, eventType)).thenReturn(event)
+    fun `should retry checkpointing on KinesisClientLibDependencyException`() {
 
-        unit.processRecords(wrap(eventJson))
+        whenever(streamCheckpointer.checkpoint())
+            .doThrow(KinesisClientLibDependencyException::class)
+            .then { } // stop throwing
+
+        val record = wrap(messageJson)
+        recordProcessor.processRecords(record)
+
+        verify(handlerMock).invoke(FooCreatedEvent("any-field"), EventMetadata("test")) // handler is successful
+        verify(streamCheckpointer, times(2)).checkpoint() // but checkpointing fails once and is tried 2 times
+    }
+
+    @Test
+    fun `should retry checkpointing on ThrottlingException`() {
+
+        whenever(streamCheckpointer.checkpoint())
+            .doThrow(ThrottlingException::class)
+            .then { } // stop throwing
+
+        val record = wrap(messageJson)
+        recordProcessor.processRecords(record)
+
+        verify(handlerMock).invoke(FooCreatedEvent("any-field"), EventMetadata("test")) // handler is successful
+        verify(streamCheckpointer, times(2)).checkpoint() // but checkpointing fails once and is tried 2 times
+    }
+
+    @Test
+    fun `shouldn't retry checkpointing on ShutdownException`() {
+
+        whenever(streamCheckpointer.checkpoint())
+            .doThrow(ShutdownException::class) // stop throwing
+
+        val record = wrap(messageJson)
+        recordProcessor.processRecords(record)
 
         verify(streamCheckpointer).checkpoint()
     }
 
     @Test
-    fun `should retry checkpointing on dependency exception`() {
-        val (eventJson, event) = eventPair()
-        whenever(objectMapper.readValue<KinesisEventWrapper<FooCreatedEvent, EventMetadata>>(eventJson, eventType)).thenReturn(event)
-        whenever(configuration.maxRetries).thenReturn(2)
+    fun `shouldn't retry checkpointing on InvalidStateException`() {
+
         whenever(streamCheckpointer.checkpoint())
-                .doThrow(KinesisClientLibDependencyException::class).then { } // stop throwing
+            .doThrow(InvalidStateException::class) // stop throwing
 
-        unit.processRecords(wrap(eventJson))
-
-        verify(streamCheckpointer, times(2)).checkpoint()
-    }
-
-    @Test
-    fun `should retry checkpointing on throttling exception`() {
-        val (eventJson, event) = eventPair()
-        whenever(objectMapper.readValue<KinesisEventWrapper<FooCreatedEvent, EventMetadata>>(eventJson, eventType)).thenReturn(event)
-        whenever(configuration.maxRetries).thenReturn(2)
-        whenever(streamCheckpointer.checkpoint())
-                .doThrow(ThrottlingException::class).then { } // stop throwing
-
-        unit.processRecords(wrap(eventJson))
-
-        verify(streamCheckpointer, times(2)).checkpoint()
-    }
-
-    @Test
-    fun `shouldn't retry checkpointing when application is shutting down`() {
-        val (eventJson, event) = eventPair()
-        whenever(objectMapper.readValue<KinesisEventWrapper<FooCreatedEvent, EventMetadata>>(eventJson, eventType)).thenReturn(event)
-        whenever(configuration.maxRetries).thenReturn(2)
-        whenever(streamCheckpointer.checkpoint())
-                .doThrow(ShutdownException::class).then { } // stop throwing
-
-        unit.processRecords(wrap(eventJson))
-
-        verify(streamCheckpointer).checkpoint()
-    }
-
-    @Test
-    fun `shouldn't retry checkpointing on invalid state`() {
-        val (eventJson, event) = eventPair()
-        whenever(objectMapper.readValue<KinesisEventWrapper<FooCreatedEvent, EventMetadata>>(eventJson, eventType)).thenReturn(event)
-        whenever(configuration.maxRetries).thenReturn(2)
-        whenever(streamCheckpointer.checkpoint())
-                .doThrow(InvalidStateException::class).then { } // stop throwing
-
-        unit.processRecords(wrap(eventJson))
+        val record = wrap(messageJson)
+        recordProcessor.processRecords(record)
 
         verify(streamCheckpointer).checkpoint()
     }
@@ -193,17 +135,15 @@ class AwsKinesisRecordProcessorTest {
             on { shutdownReason } doReturn ShutdownReason.TERMINATE // re-sharding
             on { checkpointer } doReturn streamCheckpointer
         }
-        unit.shutdown(shutdownInput)
+        recordProcessor.shutdown(shutdownInput)
 
         verify(streamCheckpointer).checkpoint()
     }
 
-    private fun eventPair() = Pair("""{"data":"{"name":"any-value"}"}""", KinesisEventWrapper<FooCreatedEvent, EventMetadata>("foo-stream", data = FooCreatedEvent("any-value"), metadata = mock { }))
-    private fun wrap(vararg kinesisEvents: String): ProcessRecordsInput {
-        return mock {
-            val eventRecords = kinesisEvents.toList().map { event -> mock<Record> { on { data } doReturn ByteBuffer.wrap(event.toByteArray()) } }
-            on { records }.thenReturn(eventRecords)
-            on { checkpointer }.thenReturn(streamCheckpointer)
-        }
+    private fun wrap(vararg recordJsons: String): ProcessRecordsInput {
+        val records = recordJsons.toList().map { record -> Record().withData(ByteBuffer.wrap(record.toByteArray())) }
+        return ProcessRecordsInput()
+                    .withRecords(records)
+                    .withCheckpointer(streamCheckpointer)
     }
 }
