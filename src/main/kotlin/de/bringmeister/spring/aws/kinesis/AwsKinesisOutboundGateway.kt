@@ -14,6 +14,9 @@ class AwsKinesisOutboundGateway(private val clientProvider: KinesisClientProvide
     private fun send(event: KinesisEvent<*, *>) {
 
         val streamName = event.streamName()
+
+        log.info("Sending event [{}] to stream [{}]", event, streamName)
+
         val kinesis = clientProvider.clientFor(streamName)
         val request = requestFactory.request(event)
         val result = kinesis.putRecord(request)
