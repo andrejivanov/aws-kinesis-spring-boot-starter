@@ -43,7 +43,14 @@ class AwsKinesisAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     @ConditionalOnBean(ObjectMapper::class)
-    fun workerFactory(clientConfigFactory: ClientConfigFactory, objectMapper: ObjectMapper) = WorkerFactory(clientConfigFactory, objectMapper)
+    fun recordMapper(objectMapper: ObjectMapper): RecordMapper {
+        return ReflectionBasedRecordMapper(objectMapper)
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    @ConditionalOnBean(ObjectMapper::class)
+    fun workerFactory(clientConfigFactory: ClientConfigFactory, recordMapper: RecordMapper) = WorkerFactory(clientConfigFactory, recordMapper)
 
     @Bean
     @ConditionalOnMissingBean

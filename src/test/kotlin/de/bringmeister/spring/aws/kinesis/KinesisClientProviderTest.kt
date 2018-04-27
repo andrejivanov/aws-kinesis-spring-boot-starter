@@ -33,7 +33,7 @@ class KinesisClientProviderTest {
     @Test
     fun `should create Kinesis client`() {
         val kinesisClient = clientProvider.clientFor("my-stream")
-        assertThat(kinesisClient).isNotNull
+        assertThat(kinesisClient).isNotNull()
     }
 
     @Test

@@ -9,20 +9,11 @@ class KinesisListenerTest {
     @Test
     fun `should create default listener`() {
 
-        val listener = KinesisListener.build("my-stream", { data: FooCreatedEvent, metadata: EventMetadata -> println("$data, $metadata") })
+        val listener = object : KinesisListener<FooCreatedEvent, EventMetadata> {
+            override fun streamName(): String = "my-stream"
+            override fun handle(data: FooCreatedEvent, metadata: EventMetadata) { /* nothing to do */ }
+        }
 
         assertThat(listener.streamName(), equalTo("my-stream"))
-        assertThat(listener.data(), equalTo(FooCreatedEvent::class.java))
-        assertThat(listener.metadata(), equalTo(EventMetadata::class.java))
-    }
-
-    @Test
-    fun `should create default listener with explicit types`() {
-
-        val listener = KinesisListener.build("my-stream", { data, metadata -> println("$data, $metadata") } , FooCreatedEvent::class.java, EventMetadata::class.java)
-
-        assertThat(listener.streamName(), equalTo("my-stream"))
-        assertThat(listener.data(), equalTo(FooCreatedEvent::class.java))
-        assertThat(listener.metadata(), equalTo(EventMetadata::class.java))
     }
 }

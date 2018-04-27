@@ -12,8 +12,6 @@ class AwsKinesisInboundGatewayTest {
     val worker = mock<Worker> {  }
     val eventHandler = { _: FooCreatedEvent, _: EventMetadata -> }
     val kinesisListener = object : KinesisListener<FooCreatedEvent, EventMetadata> {
-        override fun data(): Class<FooCreatedEvent> = FooCreatedEvent::class.java
-        override fun metadata(): Class<EventMetadata> = EventMetadata::class.java
         override fun streamName(): String = "foo-event-stream"
         override fun handle(data: FooCreatedEvent, metadata: EventMetadata) {
         }
@@ -28,18 +26,6 @@ class AwsKinesisInboundGatewayTest {
     val workerStarter: WorkerStarter = mock {  }
 
     val inboundGateway = AwsKinesisInboundGateway(workerFactory, workerStarter)
-
-    @Test
-    fun `when registering a lambda it should create worker`() {
-        inboundGateway.register("foo-stream", eventHandler, FooCreatedEvent::class.java, EventMetadata::class.java)
-        verify(workerFactory).worker(any<KinesisListener<FooCreatedEvent, EventMetadata>>())
-    }
-
-    @Test
-    fun `when registering a lambda it should run worker`() {
-        inboundGateway.register("foo-stream", eventHandler, FooCreatedEvent::class.java, EventMetadata::class.java)
-        verify(workerStarter).start(worker)
-    }
 
     @Test
     fun `when registering a listener instance it should create worker`() {

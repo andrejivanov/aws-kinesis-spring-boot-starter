@@ -83,6 +83,8 @@ public class MyService {
 }
 ```
 
+See `JavaListenerTest.java` for an example.
+
 Kotlin example:
 
 ```Kotlin
@@ -93,6 +95,8 @@ class MyService(private val gateway: AwsKinesisOutboundGateway) {
     }
 }
 ```
+
+See `KotlinListenerTest.kt` for an example.
 
 The event will be marshalled as JSON using Jackson and send to the Kinesis stream using the credentials defined in the `application.yml`.
 
@@ -119,19 +123,13 @@ public class MyKinesisListener implements KinesisListener<MyData, MyMetadata> {
         return "foo-stream";
     }
 
-    public Class<MyData> data() {
-        return MyData.class;
-    }
-
-    public Class<MyMetadata> metadata() {
-        return MyMetadata.class;
-    }
-
     public void handle(MyData data, MyMetadata metadata) {
         System.out.println(data + ", " + metadata);
     }
 }
 ```
+
+See `JavaListenerTest.java` for an example.
 
 Kotlin example:
 
@@ -140,8 +138,8 @@ Kotlin example:
 class MyKinesisListener: KinesisListener<MyData, MyMetadata> {
 
     override fun streamName(): String = "foo-stream"
-    override fun data(): Class<MyData> = MyData::class.java
-    override fun metadata(): Class<MyMetadata> = MyMetadata::class.java
     override fun handle(data: MyData, metadata: MyMetadata) = println("$data, $metadata")
 }
 ```
+
+See `KotlinListenerTest.kt` for an example.
