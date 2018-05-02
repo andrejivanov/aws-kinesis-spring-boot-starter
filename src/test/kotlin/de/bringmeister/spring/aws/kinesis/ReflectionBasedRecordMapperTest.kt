@@ -2,8 +2,7 @@ package de.bringmeister.spring.aws.kinesis
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.KotlinModule
-import com.natpryce.hamkrest.assertion.assertThat
-import com.natpryce.hamkrest.equalTo
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 
 class ReflectionBasedRecordMapperTest {
@@ -14,16 +13,18 @@ class ReflectionBasedRecordMapperTest {
     @Test
     fun `should deserialize record with a listener implementing the interface`() {
 
-        val handler = object : KinesisListener<FooCreatedEvent, EventMetadata> {
-            override fun streamName(): String = "foo-event-stream"
-            override fun handle(data: FooCreatedEvent, metadata: EventMetadata) { /* nothing to do */ }
+        val handler = object {
+            @KinesisListener(stream = "foo-event-stream")
+            fun handle(data: FooCreatedEvent, metadata: EventMetadata) { /* nothing to do */ }
         }
 
-        val recordMapper = ReflectionBasedRecordMapper(mapper)
-        val message = recordMapper.deserializeFor(messageJson, handler)
+        val kinesisListenerProxy = KinesisListenerProxyFactory().proxiesFor(handler)[0]
 
-        assertThat(message.streamName(), equalTo("foo-event-stream"))
-        assertThat(message.data(), equalTo(FooCreatedEvent("any-field")))
-        assertThat(message.metadata(), equalTo(EventMetadata("test")))
+        val recordMapper = ReflectionBasedRecordMapper(mapper)
+        val message = recordMapper.deserializeFor(messageJson, kinesisListenerProxy)
+
+        assertThat(message.streamName()).isEqualTo("foo-event-stream")
+        assertThat(message.data()).isEqualTo(FooCreatedEvent("any-field"))
+        assertThat(message.metadata()).isEqualTo(EventMetadata("test"))
     }
 }

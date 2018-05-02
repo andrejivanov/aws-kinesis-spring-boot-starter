@@ -14,9 +14,9 @@ import com.amazonaws.services.kinesis.model.Record
 import org.slf4j.LoggerFactory
 import java.nio.charset.Charset
 
-class AwsKinesisRecordProcessor<D, M>(private val recordMapper: RecordMapper,
-                                      private val configuration: RecordProcessorConfiguration,
-                                      private val handler: KinesisListener<D, M>) : IRecordProcessor {
+class AwsKinesisRecordProcessor(private val recordMapper: RecordMapper,
+                                private val configuration: RecordProcessorConfiguration,
+                                private val handler: KinesisListenerProxy) : IRecordProcessor {
 
     private val log = LoggerFactory.getLogger(this.javaClass.name)
 
@@ -57,7 +57,7 @@ class AwsKinesisRecordProcessor<D, M>(private val recordMapper: RecordMapper,
     private fun processRecord(recordData: String) {
         log.debug("Received message: {}", recordData)
         val message = recordMapper.deserializeFor(recordData, handler)
-        handler.handle(message.data(), message.metadata())
+        handler.invoke(message.data(), message.metadata())
     }
 
     private fun checkpoint(checkpointer: IRecordProcessorCheckpointer) {

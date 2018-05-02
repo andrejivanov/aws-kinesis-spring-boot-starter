@@ -109,20 +109,18 @@ The event will be marshalled as JSON using Jackson and send to the Kinesis strea
 
 ### Consuming messages
 
-In order to consume messages, you need to extend the `KinesisListener` interface.
+In order to consume messages, you need to annotate your listener method with the `KinesisListener` annotation.
 Your class must be a Spring Bean annotated withg `@Service` or `@Component`.
 It will be picked-up automatically and registered as a listener.
+The listener method must take two arguments - one for the actual data and one for the meta data.
 
 Java example:
 
 ```Java
 @Service
-public class MyKinesisListener implements KinesisListener<MyData, MyMetadata> {
+public class MyKinesisListener {
 
-    public String streamName() {
-        return "foo-stream";
-    }
-
+    @KinesisListener(stream = "foo-stream")
     public void handle(MyData data, MyMetadata metadata) {
         System.out.println(data + ", " + metadata);
     }
@@ -135,9 +133,9 @@ Kotlin example:
 
 ```Kotlin
 @Service
-class MyKinesisListener: KinesisListener<MyData, MyMetadata> {
+class MyKinesisListener {
 
-    override fun streamName(): String = "foo-stream"
+    @KinesisListener(stream = "foo-stream")
     override fun handle(data: MyData, metadata: MyMetadata) = println("$data, $metadata")
 }
 ```
