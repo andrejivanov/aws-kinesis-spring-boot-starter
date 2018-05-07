@@ -31,12 +31,16 @@ class AwsKinesisRecordProcessorTest {
     val streamCheckpointer = mock<IRecordProcessorCheckpointer> {}
     val configuration = RecordProcessorConfiguration(2, 1)
     var handlerMock = mock<(FooCreatedEvent, EventMetadata) -> Unit> {  }
-    var kinesisListener = object : KinesisListener<FooCreatedEvent, EventMetadata> {
-        override fun streamName(): String = "foo-event-stream"
-        override fun handle(data: FooCreatedEvent, metadata: EventMetadata) {
+
+    var handler = object {
+
+        @KinesisListener(stream = "foo-event-stream")
+        fun handle(data: FooCreatedEvent, metadata: EventMetadata) {
             handlerMock.invoke(data, metadata)
         }
     }
+
+    val kinesisListener = KinesisListenerProxyFactory().proxiesFor(handler)[0]
 
     val recordProcessor = AwsKinesisRecordProcessor(recordMapper, configuration, kinesisListener)
 
