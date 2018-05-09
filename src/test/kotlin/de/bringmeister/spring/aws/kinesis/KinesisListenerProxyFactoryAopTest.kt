@@ -1,0 +1,56 @@
+package de.bringmeister.spring.aws.kinesis
+
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.context.annotation.Scope
+import org.springframework.context.annotation.ScopedProxyMode
+import org.springframework.stereotype.Service
+import org.springframework.test.context.ContextConfiguration
+import org.springframework.test.context.junit4.SpringRunner
+
+@SpringBootTest
+@RunWith(SpringRunner::class)
+@ContextConfiguration(classes = [KinesisListenerProxyFactoryAopTest.DummyListener::class])
+class KinesisListenerProxyFactoryAopTest {
+
+    var kinesisListenerProxyFactory : KinesisListenerProxyFactory = KinesisListenerProxyFactory()
+
+    @Autowired
+    lateinit var dummyListener: DummyListener
+
+    @Test
+    fun `should return list no Kinesis listeners`() {
+
+        val kinesisListenerProxies = kinesisListenerProxyFactory.proxiesFor(dummyListener)
+
+        assertThat(kinesisListenerProxies).hasSize(2)
+
+        assertThat(kinesisListenerProxies[0].stream).isEqualTo("stream-1")
+        assertThat(kinesisListenerProxies[0].bean).isInstanceOf(DummyListener::class.java)
+        assertThat(kinesisListenerProxies[0].method).isNotNull
+
+        assertThat(kinesisListenerProxies[1].stream).isEqualTo("stream-2")
+        assertThat(kinesisListenerProxies[1].bean).isInstanceOf(DummyListener::class.java)
+        assertThat(kinesisListenerProxies[1].method).isNotNull
+    }
+
+    // This class will be autowired wrapped in a proxy. This proxy is created
+    // by Spring. We want to be able to register the methods anyway.
+    @Service
+    @Scope("singleton", proxyMode = ScopedProxyMode.TARGET_CLASS)
+    class DummyListener {
+
+        @KinesisListener(stream = "stream-1")
+        fun listener1(data: FooCreatedEvent, metadata: EventMetadata) {
+            // empty
+        }
+
+        @KinesisListener(stream = "stream-2")
+        fun listener2(data: FooCreatedEvent, metadata: EventMetadata) {
+            // empty
+        }
+    }
+}
