@@ -17,7 +17,7 @@ class KinesisListenerProxyFactory {
         // we don't receive plain objects but AOP proxies. In order to
         // work properly on those proxies, we need to "unwrap" them.
         val isAopProxy = AopUtils.isAopProxy(bean)
-        var objectToProcess = if (isAopProxy && bean is Advised) {
+        val objectToProcess = if (isAopProxy && bean is Advised) {
             bean.targetSource.target;
         } else {
             bean
@@ -28,6 +28,11 @@ class KinesisListenerProxyFactory {
                 .methods
                 .filter({ method -> method.isAnnotationPresent(KinesisListener::class.java) })
                 // the original bean! not the objectToProcess!
-                .map({ method -> KinesisListenerProxy(method, bean, method.getAnnotation(KinesisListener::class.java).stream) })
+                .map({
+                    method -> KinesisListenerProxy(method,
+                                                   bean,
+                                                   method.getAnnotation(KinesisListener::class.java).stream,
+                                                   method.getAnnotation(KinesisListener::class.java).threadPoolSize)
+                })
     }
 }
