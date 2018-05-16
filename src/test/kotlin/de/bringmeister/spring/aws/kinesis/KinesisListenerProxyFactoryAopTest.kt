@@ -16,23 +16,20 @@ import org.springframework.test.context.junit4.SpringRunner
 @ContextConfiguration(classes = [KinesisListenerProxyFactoryAopTest.DummyListener::class])
 class KinesisListenerProxyFactoryAopTest {
 
-    var kinesisListenerProxyFactory : KinesisListenerProxyFactory = KinesisListenerProxyFactory()
+    var kinesisListenerProxyFactory : KinesisListenerProxyFactory = KinesisListenerProxyFactory(AopProxyUtils())
 
     @Autowired
     lateinit var dummyListener: DummyListener
 
     @Test
-    fun `should return list no Kinesis listeners`() {
+    fun `should return list of Kinesis listeners`() {
 
         val kinesisListenerProxies = kinesisListenerProxyFactory.proxiesFor(dummyListener)
 
         assertThat(kinesisListenerProxies).hasSize(2)
-
-        assertThat(kinesisListenerProxies[0].stream).isEqualTo("stream-1")
+        assertThat(kinesisListenerProxies.map {it.stream }).contains("stream-1", "stream-2")
         assertThat(kinesisListenerProxies[0].bean).isInstanceOf(DummyListener::class.java)
         assertThat(kinesisListenerProxies[0].method).isNotNull
-
-        assertThat(kinesisListenerProxies[1].stream).isEqualTo("stream-2")
         assertThat(kinesisListenerProxies[1].bean).isInstanceOf(DummyListener::class.java)
         assertThat(kinesisListenerProxies[1].method).isNotNull
     }

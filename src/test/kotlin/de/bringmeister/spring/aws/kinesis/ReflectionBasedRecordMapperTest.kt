@@ -18,7 +18,7 @@ class ReflectionBasedRecordMapperTest {
             fun handle(data: FooCreatedEvent, metadata: EventMetadata) { /* nothing to do */ }
         }
 
-        val kinesisListenerProxy = KinesisListenerProxyFactory().proxiesFor(handler)[0]
+        val kinesisListenerProxy = KinesisListenerProxyFactory(AopProxyUtils()).proxiesFor(handler)[0]
 
         val recordMapper = ReflectionBasedRecordMapper(mapper)
         val message = recordMapper.deserializeFor(messageJson, kinesisListenerProxy)

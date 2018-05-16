@@ -22,7 +22,7 @@ class AopProxyUtilsTest {
 
     @Test
     fun `should return proxied object`() {
-        val unwrapped = AopProxyUtils.unwrap(testService)
+        val unwrapped = AopProxyUtils().unwrap(testService)
 
         assertThat(isAopProxy(testService)).isTrue()
         assertThat(isAopProxy(unwrapped)).isFalse()
@@ -32,7 +32,7 @@ class AopProxyUtilsTest {
     @Test
     fun `should return original object if it's not proxied`() {
         val string = "I'm not a proxy"
-        val unwrapped = AopProxyUtils.unwrap(string)
+        val unwrapped = AopProxyUtils().unwrap(string)
 
         assertThat(isAopProxy(string)).isFalse()
         assertThat(isAopProxy(unwrapped)).isFalse()

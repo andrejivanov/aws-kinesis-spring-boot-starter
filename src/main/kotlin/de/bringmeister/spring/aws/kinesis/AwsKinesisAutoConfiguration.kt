@@ -74,7 +74,15 @@ class AwsKinesisAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    fun kinesisListenerPostProcessor(inboundGateway: AwsKinesisInboundGateway): KinesisListenerPostProcessor {
-        return KinesisListenerPostProcessor(inboundGateway)
+    fun kinesisListenerProxyFactory(): KinesisListenerProxyFactory {
+        val aopProxyUtils = AopProxyUtils()
+        return KinesisListenerProxyFactory(aopProxyUtils)
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    fun kinesisListenerPostProcessor(inboundGateway: AwsKinesisInboundGateway,
+                                     listenerFactory: KinesisListenerProxyFactory): KinesisListenerPostProcessor {
+        return KinesisListenerPostProcessor(inboundGateway, listenerFactory)
     }
 }
