@@ -28,10 +28,8 @@ class KinesisListenerProxyFactoryAopTest {
 
         assertThat(kinesisListenerProxies).hasSize(2)
         assertThat(kinesisListenerProxies.map {it.stream }).contains("stream-1", "stream-2")
-        assertThat(kinesisListenerProxies[0].bean).isInstanceOf(DummyListener::class.java)
-        assertThat(kinesisListenerProxies[0].method).isNotNull
-        assertThat(kinesisListenerProxies[1].bean).isInstanceOf(DummyListener::class.java)
-        assertThat(kinesisListenerProxies[1].method).isNotNull
+        assertThat(kinesisListenerProxies.map {it.bean }).allMatch { bean -> bean is DummyListener }
+        assertThat(kinesisListenerProxies.map {it.method }).allMatch { bean -> bean != null }
     }
 
     // This class will be autowired wrapped in a proxy. This proxy is created
