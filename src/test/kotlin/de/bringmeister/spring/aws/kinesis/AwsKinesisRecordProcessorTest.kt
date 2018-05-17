@@ -40,7 +40,7 @@ class AwsKinesisRecordProcessorTest {
         }
     }
 
-    val kinesisListener = KinesisListenerProxyFactory().proxiesFor(handler)[0]
+    val kinesisListener = KinesisListenerProxyFactory(AopProxyUtils()).proxiesFor(handler)[0]
 
     val recordProcessor = AwsKinesisRecordProcessor(recordMapper, configuration, kinesisListener)
 
