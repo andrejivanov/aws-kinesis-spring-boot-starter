@@ -1,9 +1,12 @@
 package de.bringmeister.spring.aws.kinesis;
 
+import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.github.dockerjava.api.model.ExposedPort;
 import com.github.dockerjava.api.model.PortBinding;
 import com.github.dockerjava.api.model.Ports;
+import de.bringmeister.connect.erpproductfacade.ports.event.KotlinListenerTest;
 import de.bringmeister.spring.aws.kinesis.local.KinesisLocalConfiguration;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -11,6 +14,9 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.jackson.JacksonAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.testcontainers.containers.GenericContainer;
@@ -24,7 +30,8 @@ import java.util.function.Consumer;
         JacksonConfiguration.class,
         JacksonAutoConfiguration.class,
         AwsKinesisAutoConfiguration.class,
-        KinesisLocalConfiguration.class
+        KinesisLocalConfiguration.class,
+        KotlinListenerTest.DummyAWSCredentialsConfiguration.class
 })
 @RunWith(SpringRunner.class)
 public class JavaListenerTest {
@@ -62,5 +69,26 @@ public class JavaListenerTest {
 
         // If we come to this point, the LATCH was counted down!
         // This means the event has been consumed - test succeeded!
+    }
+
+    @Configuration
+    private class DummyAWSCredentialsConfiguration {
+
+        @Bean
+        @Primary
+        public AWSStaticCredentialsProvider credentialsProvider() {
+            return new AWSStaticCredentialsProvider(new AWSCredentials() {
+
+                @Override
+                public String getAWSAccessKeyId() {
+                    return "no-key";
+                }
+
+                @Override
+                public String getAWSSecretKey() {
+                    return "no-passwd";
+                }
+            });
+        }
     }
 }

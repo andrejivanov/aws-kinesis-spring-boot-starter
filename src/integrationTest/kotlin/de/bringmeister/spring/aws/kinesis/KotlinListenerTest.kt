@@ -1,5 +1,7 @@
 package de.bringmeister.connect.erpproductfacade.ports.event
 
+import com.amazonaws.auth.AWSCredentials
+import com.amazonaws.auth.AWSStaticCredentialsProvider
 import com.github.dockerjava.api.model.ExposedPort
 import com.github.dockerjava.api.model.PortBinding
 import com.github.dockerjava.api.model.Ports
@@ -16,6 +18,9 @@ import org.junit.runner.RunWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.jackson.JacksonAutoConfiguration
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.Primary
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.junit4.SpringRunner
 import org.testcontainers.containers.GenericContainer
@@ -27,7 +32,8 @@ import java.util.concurrent.CountDownLatch
     JacksonConfiguration::class,
     JacksonAutoConfiguration::class,
     AwsKinesisAutoConfiguration::class,
-    KinesisLocalConfiguration::class
+    KinesisLocalConfiguration::class,
+    KotlinListenerTest.DummyAWSCredentialsConfiguration::class
 ])
 @RunWith(SpringRunner::class)
 class KotlinListenerTest {
@@ -66,6 +72,17 @@ class KotlinListenerTest {
 
         // If we come to this point, the LATCH was counted down!
         // This means the event has been consumed - test succeeded!
+    }
+
+    @Configuration
+    class DummyAWSCredentialsConfiguration {
+
+        @Bean
+        @Primary
+        fun credentialsProvider() = AWSStaticCredentialsProvider(object : AWSCredentials {
+            override fun getAWSAccessKeyId() = "no-key"
+            override fun getAWSSecretKey() = "no-passwd"
+        })
     }
 }
 
