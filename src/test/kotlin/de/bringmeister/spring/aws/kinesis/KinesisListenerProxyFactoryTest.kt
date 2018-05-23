@@ -20,14 +20,7 @@ class KinesisListenerProxyFactoryTest {
         val kinesisListenerProxies = kinesisListenerProxyFactory.proxiesFor(dummyListener)
 
         assertThat(kinesisListenerProxies).hasSize(2)
-
-        assertThat(kinesisListenerProxies[0].stream).isEqualTo("stream-1")
-        assertThat(kinesisListenerProxies[0].bean).isEqualTo(dummyListener)
-        assertThat(kinesisListenerProxies[0].method).isNotNull
-
-        assertThat(kinesisListenerProxies[1].stream).isEqualTo("stream-2")
-        assertThat(kinesisListenerProxies[1].bean).isEqualTo(dummyListener)
-        assertThat(kinesisListenerProxies[1].method).isNotNull
+        assertThat(kinesisListenerProxies.stream().map { it.stream }).contains("stream-1", "stream-2")
     }
 
     private class DummyListener {
