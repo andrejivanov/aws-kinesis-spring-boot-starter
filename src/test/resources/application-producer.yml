@@ -1,6 +1,0 @@
-aws:
-  kinesis:
-    producer:
-      - stream-name: foo-event-stream
-        aws-account-id: "222222222222"
-        iam-role-to-assume: ExampleKinesisProducerRole

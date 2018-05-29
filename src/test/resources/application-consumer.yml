@@ -1,9 +1,0 @@
-aws:
-  kinesis:
-    consumer-group: example-service
-    consumer:
-      - stream-name: foo-event-stream
-        aws-account-id: "111111111111"
-        iam-role-to-assume: ExampleKinesisConsumerRole
-        dynamoDBSettings:
-          url: http://localhost:14568

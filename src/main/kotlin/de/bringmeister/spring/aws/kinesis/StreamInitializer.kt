@@ -1,4 +1,4 @@
-package de.bringmeister.spring.aws.kinesis.local
+package de.bringmeister.spring.aws.kinesis
 
 import com.amazonaws.services.kinesis.AmazonKinesis
 import com.amazonaws.services.kinesis.model.DescribeStreamResult
@@ -6,27 +6,33 @@ import com.amazonaws.services.kinesis.model.ResourceNotFoundException
 import org.slf4j.LoggerFactory
 import java.time.Instant.now
 
-class KinesisStreamInitializer(private val kinesis: AmazonKinesis) {
+class StreamInitializer(private val kinesis: AmazonKinesis,
+                        private val kinesisSettings: AwsKinesisSettings) {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
 
+    private val activeStreams = mutableListOf<String>()
+
     fun createStreamIfMissing(streamName: String, shardCount: Int = 1) {
-        try {
-            val response = kinesis.describeStream(streamName)
-            if (!streamIsActive(response)) {
+        if(kinesisSettings.createStreams && !activeStreams.contains(streamName)) {
+            try {
+                val response = kinesis.describeStream(streamName)
+                if (!streamIsActive(response)) {
+                    waitForStreamToBecomeActive(streamName)
+                }
+            } catch (ex: ResourceNotFoundException) {
+                log.info("Creating stream. [streamName=$streamName]")
+                kinesis.createStream(streamName, shardCount)
                 waitForStreamToBecomeActive(streamName)
             }
-        } catch (ex: ResourceNotFoundException) {
-            log.info("Creating stream. [streamName=$streamName]")
-            kinesis.createStream(streamName, shardCount)
-            waitForStreamToBecomeActive(streamName)
+            activeStreams.add(streamName)
+            log.info("Stream is active. [streamName=$streamName]")
         }
-        log.info("Stream is active. [streamName=$streamName]")
     }
 
     private fun waitForStreamToBecomeActive(streamName: String) {
-        log.info("Waiting for stream to become active. [streamName=$streamName]")
-        val thirtySecondsInTheFuture = now().plusSeconds(30)
+        log.debug("Waiting for stream to become active. [streamName=$streamName]")
+        val thirtySecondsInTheFuture = now().plusSeconds(kinesisSettings.creationTimeout.toLong())
         while (now().isBefore(thirtySecondsInTheFuture)) {
             try {
                 val response = kinesis.describeStream(streamName)

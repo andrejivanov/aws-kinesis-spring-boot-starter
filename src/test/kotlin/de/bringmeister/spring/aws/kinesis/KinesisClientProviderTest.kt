@@ -4,46 +4,33 @@ import com.nhaarman.mockito_kotlin.any
 import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.verify
 import com.nhaarman.mockito_kotlin.whenever
+import de.bringmeister.spring.aws.kinesis.AwsKinesisSettingsTestFactory.Companion.settings
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
 
 class KinesisClientProviderTest {
 
-    val assumeRoleCredentialsProviderFactory: AWSCredentialsProviderFactory = mock { }
-    var clientProvider : KinesisClientProvider = mock {  }
+    private val credentialsProviderFactory: AWSCredentialsProviderFactory = mock { }
+    private val settings = settings().withRequired().withDefaults().withProducerFor("my-stream").build()
+    private val clientProvider = KinesisClientProvider(credentialsProviderFactory, settings)
 
     @Before
     fun setUp() {
-        whenever(assumeRoleCredentialsProviderFactory.credentials(any())).thenReturn(mock { })
-
-        val producerSettings = ProducerSettings()
-        producerSettings.awsAccountId = "2349724378923"
-        producerSettings.iamRoleToAssume = "bar-iam-role"
-        producerSettings.streamName = "my-stream"
-
-        val settings = AwsKinesisSettings()
-        settings.consumerGroup = "any-consumer-group"
-        settings.kinesisUrl = "http://any-example.com"
-        settings.producer.add(producerSettings)
-
-        clientProvider = KinesisClientProvider(assumeRoleCredentialsProviderFactory, settings)
+        whenever(credentialsProviderFactory.credentials(any())).thenReturn(mock { })
     }
 
     @Test
-    fun `should create Kinesis client`() {
-        val kinesisClient = clientProvider.clientFor("my-stream")
-        assertThat(kinesisClient).isNotNull()
+    fun `should create Kinesis client with detailed settings`() {
+        val client = clientProvider.clientFor("my-stream")
+        assertThat(client).isNotNull
+        verify(credentialsProviderFactory).credentials("arn:aws:iam::100000000042:role/kinesis-user-role")
     }
 
     @Test
-    fun `should obtain Kinesis credentials`() {
-        clientProvider.clientFor("my-stream")
-        verify(assumeRoleCredentialsProviderFactory).credentials("arn:aws:iam::2349724378923:role/bar-iam-role")
-    }
-
-    @Test(expected = IllegalArgumentException::class)
-    fun `should throw exception for unknown stream`() {
-        clientProvider.clientFor("unknown-stream")
+    fun `should create Kinesis client with default settings`() {
+        val client = clientProvider.clientFor("unknown-stream")
+        assertThat(client).isNotNull
+        verify(credentialsProviderFactory).credentials("arn:aws:iam::100000000042:role/kinesis-user-role")
     }
 }

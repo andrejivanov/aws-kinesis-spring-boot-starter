@@ -12,7 +12,7 @@ class ClientConfigFactory(private val credentialsProvider: AWSCredentialsProvide
 
     fun consumerConfig(streamName: String): KinesisClientLibConfiguration {
 
-        val consumerSettings = kinesisSettings.consumer.first { it.streamName == streamName }
+        val consumerSettings = kinesisSettings.getConsumerSettingsOrDefault(streamName)
         val roleToAssume = "arn:aws:iam::${consumerSettings.awsAccountId}:role/${consumerSettings.iamRoleToAssume}"
         val credentials = awsCredentialsProviderFactory.credentials(roleToAssume)
         val workerId = InetAddress.getLocalHost().canonicalHostName + ":" + UUID.randomUUID()
@@ -21,9 +21,9 @@ class ClientConfigFactory(private val credentialsProvider: AWSCredentialsProvide
         return KinesisClientLibConfiguration(applicationName, streamName, credentials, credentialsProvider, credentialsProvider, workerId)
                             .withInitialPositionInStream(TRIM_HORIZON)
                             .withKinesisEndpoint(kinesisSettings.kinesisUrl)
-                            .withDynamoDBEndpoint(consumerSettings.dynamoDBSettings.url)
-                            .withMetricsLevel(consumerSettings.metricsLevel)
-                            .withInitialLeaseTableReadCapacity(consumerSettings.dynamoDBSettings.leaseTableReadCapacity)
-                            .withInitialLeaseTableWriteCapacity(consumerSettings.dynamoDBSettings.leaseTableWriteCapacity)
+                            .withMetricsLevel(kinesisSettings.metricsLevel)
+                            .withDynamoDBEndpoint(kinesisSettings.dynamoDbSettings!!.url)
+                            .withInitialLeaseTableReadCapacity(kinesisSettings.dynamoDbSettings!!.leaseTableReadCapacity)
+                            .withInitialLeaseTableWriteCapacity(kinesisSettings.dynamoDbSettings!!.leaseTableWriteCapacity)
     }
 }

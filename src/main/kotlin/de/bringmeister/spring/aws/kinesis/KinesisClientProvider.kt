@@ -13,19 +13,33 @@ import com.amazonaws.services.kinesis.AmazonKinesisClientBuilder
 class KinesisClientProvider(private val credentialFactory: AWSCredentialsProviderFactory,
                             private val kinesisSettings: AwsKinesisSettings) {
 
-    private val kinesisClients : Map<String, AmazonKinesis>
-
-    init {
-        kinesisClients = kinesisSettings.producer.map { it.streamName to createClientFor(it.streamName) }.toMap()
-    }
+    private val kinesisClients = mutableMapOf<String, AmazonKinesis>()
 
     fun clientFor(streamName: String): AmazonKinesis {
-        return kinesisClients[streamName] ?: throw IllegalArgumentException("No client found for stream [${streamName}]")
+        var client = kinesisClients[streamName]
+        if(client == null) {
+            client = createClientFor(streamName)
+            kinesisClients[streamName] = client
+        }
+        return client
     }
 
     private fun createClientFor(streamName: String): AmazonKinesis {
-        val streamSettings = kinesisSettings.producer.first { it.streamName == streamName }
+        val streamSettings = kinesisSettings.getProducerSettingsOrDefault(streamName)
         val roleToAssume = "arn:aws:iam::${streamSettings.awsAccountId}:role/${streamSettings.iamRoleToAssume}"
+        val credentials = credentialFactory.credentials(roleToAssume)
+        return AmazonKinesisClientBuilder
+                                    .standard()
+                                    .withCredentials(credentials)
+                                    .withEndpointConfiguration(
+                                        AwsClientBuilder
+                                            .EndpointConfiguration(kinesisSettings.kinesisUrl, kinesisSettings.region)
+                                    )
+                                    .build()
+    }
+
+    fun defaultClient(): AmazonKinesis {
+        val roleToAssume = "arn:aws:iam::${kinesisSettings.awsAccountId}:role/${kinesisSettings.iamRoleToAssume}"
         val credentials = credentialFactory.credentials(roleToAssume)
         return AmazonKinesisClientBuilder
                                     .standard()
