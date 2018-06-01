@@ -2,6 +2,8 @@ package de.bringmeister.spring.aws.kinesis
 
 import com.amazonaws.auth.AWSCredentialsProvider
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain
+import com.amazonaws.client.builder.AwsClientBuilder
+import com.amazonaws.services.kinesis.AmazonKinesisClientBuilder
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.springframework.boot.autoconfigure.AutoConfigureAfter
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
@@ -65,12 +67,18 @@ class AwsKinesisAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     fun kinesisOutboundGateway(kinesisClientProvider: KinesisClientProvider,
-                               requestFactory: RequestFactory) = AwsKinesisOutboundGateway(kinesisClientProvider, requestFactory)
+                               requestFactory: RequestFactory,
+                               streamInitializer: StreamInitializer): AwsKinesisOutboundGateway {
+        return AwsKinesisOutboundGateway(kinesisClientProvider, requestFactory, streamInitializer)
+    }
 
     @Bean
     @ConditionalOnMissingBean
     fun kinesisInboundGateway(workerFactory: WorkerFactory,
-                              workerStarter: WorkerStarter) = AwsKinesisInboundGateway(workerFactory, workerStarter)
+                              workerStarter: WorkerStarter,
+                              streamInitializer: StreamInitializer): AwsKinesisInboundGateway {
+        return AwsKinesisInboundGateway(workerFactory, workerStarter, streamInitializer)
+    }
 
     @Bean
     @ConditionalOnMissingBean
@@ -84,5 +92,14 @@ class AwsKinesisAutoConfiguration {
     fun kinesisListenerPostProcessor(inboundGateway: AwsKinesisInboundGateway,
                                      listenerFactory: KinesisListenerProxyFactory): KinesisListenerPostProcessor {
         return KinesisListenerPostProcessor(inboundGateway, listenerFactory)
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    fun streamInitializer(kinesisClientProvider: KinesisClientProvider,
+                          kinesisSettings: AwsKinesisSettings): StreamInitializer {
+        System.setProperty("com.amazonaws.sdk.disableCbor", "1")
+        val kinesisClient = kinesisClientProvider.defaultClient()
+        return StreamInitializer(kinesisClient, kinesisSettings)
     }
 }

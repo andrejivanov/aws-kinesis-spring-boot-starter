@@ -32,31 +32,20 @@ compile "com.github.bringmeister:aws-kinesis-spring-boot-starter:$version"
 
 ## Configuration
 
-Configure the streams you want to consume and/or publish to in your `application.yml`.
-Provide the stream name, the ID of the AWS account this streams belongs to and
-IAM role that allows you to read and/or write to the stream.
+In order to use this library you need to configure some properties in your `application.yml`. 
+The following shows the minimal required configuration.
+This configuration will allow you to send and receive messages.
+Any stream used in your application will be created (as soon as it is first used) if it does not exist.
+
 ```
 aws:
   kinesis:
-    consumerGroup: example-service # required only for consuming
-    kinesisUrl: "https://kinesis.eu-central-1.amazonaws.com" #optional
-    region: eu-cental-1 #optional
-    consumer:
-      - streamName: foo-event-stream
-        awsAccountId: "000000000000"
-        iamRoleToAssume: ExampleServiceKinesisConsumer
-        metricsLevel: DETAILED #optional
-        dynamoDBSettings:
-            url: "https://dynamodb.eu-central-1.amazonaws.com" #optional
-            leaseTableReadCapacity: 5 #optional
-            leaseTableWriteCapacity: 8 #optional
-      - streamName: bar-event-stream
-        awsAccountId: "111111111111"
-        iamRoleToAssume: ExampleServiceKinesisConsumer
-    producer:
-      - streamName: foo-event-stream
-        awsAccountId: "000000000000"
-        iamRoleToAssume: ExampleServiceKinesisProducer
+    region: eu-cental-1
+    kinesis-url: https://kinesis.eu-central-1.amazonaws.com
+    consumer-group: example-service
+    aws-account-id: "000000000000"
+    iam-role-to-assume: ExampleKinesisRole
+    create-streams: true
 ```
 
 ## Usage

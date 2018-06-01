@@ -15,8 +15,8 @@ class AwsKinesisOutboundGatewayTest {
 
     val requestFactory = mock<RequestFactory> { }
     val clientProvider = mock<KinesisClientProvider> { }
-
-    val outboundGateway = AwsKinesisOutboundGateway(clientProvider, requestFactory)
+    val streamInitializer = mock<StreamInitializer>()
+    val outboundGateway = AwsKinesisOutboundGateway(clientProvider, requestFactory, streamInitializer)
 
     @Test
     fun `should create and send kinesis request`() {

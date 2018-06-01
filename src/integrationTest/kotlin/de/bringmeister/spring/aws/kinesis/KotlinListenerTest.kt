@@ -1,7 +1,8 @@
 package de.bringmeister.connect.erpproductfacade.ports.event
 
-import com.amazonaws.auth.AWSCredentials
+import com.amazonaws.auth.AWSCredentialsProvider
 import com.amazonaws.auth.AWSStaticCredentialsProvider
+import com.amazonaws.auth.BasicAWSCredentials
 import com.github.dockerjava.api.model.ExposedPort
 import com.github.dockerjava.api.model.PortBinding
 import com.github.dockerjava.api.model.Ports
@@ -26,7 +27,7 @@ import org.springframework.test.context.junit4.SpringRunner
 import org.testcontainers.containers.GenericContainer
 import java.util.concurrent.CountDownLatch
 
-@ActiveProfiles("kinesis-local", "consumer", "producer")
+@ActiveProfiles("kinesis-local")
 @SpringBootTest(classes = [
     KotlinTestListener::class,
     JacksonConfiguration::class,
@@ -79,10 +80,9 @@ class KotlinListenerTest {
 
         @Bean
         @Primary
-        fun credentialsProvider() = AWSStaticCredentialsProvider(object : AWSCredentials {
-            override fun getAWSAccessKeyId() = "no-key"
-            override fun getAWSSecretKey() = "no-passwd"
-        })
+        fun credentialsProvider(): AWSCredentialsProvider {
+            return AWSStaticCredentialsProvider(BasicAWSCredentials("no-key", "no-passwd"))
+        }
     }
 }
 

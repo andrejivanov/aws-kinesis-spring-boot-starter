@@ -1,4 +1,0 @@
-aws:
-  kinesis:
-    region: local
-    kinesisUrl: http://localhost:14567

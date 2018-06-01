@@ -1,7 +1,8 @@
 package de.bringmeister.spring.aws.kinesis;
 
-import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
+import com.amazonaws.auth.BasicAWSCredentials;
 import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.github.dockerjava.api.model.ExposedPort;
 import com.github.dockerjava.api.model.PortBinding;
@@ -24,7 +25,7 @@ import org.testcontainers.containers.GenericContainer;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.Consumer;
 
-@ActiveProfiles({ "kinesis-local", "consumer", "producer" })
+@ActiveProfiles("kinesis-local")
 @SpringBootTest(classes = {
         JavaTestListener.class,
         JacksonConfiguration.class,
@@ -76,19 +77,8 @@ public class JavaListenerTest {
 
         @Bean
         @Primary
-        public AWSStaticCredentialsProvider credentialsProvider() {
-            return new AWSStaticCredentialsProvider(new AWSCredentials() {
-
-                @Override
-                public String getAWSAccessKeyId() {
-                    return "no-key";
-                }
-
-                @Override
-                public String getAWSSecretKey() {
-                    return "no-passwd";
-                }
-            });
+        public AWSCredentialsProvider credentialsProvider() {
+            return new AWSStaticCredentialsProvider(new BasicAWSCredentials("no-key", "no-passwd"));
         }
     }
 }
