@@ -10,14 +10,16 @@ import com.amazonaws.services.kinesis.AmazonKinesisClientBuilder
  * means, we can get a client for a specific stream in order to send messages
  * to this stream.
  */
-class KinesisClientProvider(private val credentialFactory: AWSCredentialsProviderFactory,
-                            private val kinesisSettings: AwsKinesisSettings) {
+class KinesisClientProvider(
+    private val credentialFactory: AWSCredentialsProviderFactory,
+    private val kinesisSettings: AwsKinesisSettings
+) {
 
     private val kinesisClients = mutableMapOf<String, AmazonKinesis>()
 
     fun clientFor(streamName: String): AmazonKinesis {
         var client = kinesisClients[streamName]
-        if(client == null) {
+        if (client == null) {
             client = createClientFor(streamName)
             kinesisClients[streamName] = client
         }
@@ -29,25 +31,25 @@ class KinesisClientProvider(private val credentialFactory: AWSCredentialsProvide
         val roleToAssume = "arn:aws:iam::${streamSettings.awsAccountId}:role/${streamSettings.iamRoleToAssume}"
         val credentials = credentialFactory.credentials(roleToAssume)
         return AmazonKinesisClientBuilder
-                                    .standard()
-                                    .withCredentials(credentials)
-                                    .withEndpointConfiguration(
-                                        AwsClientBuilder
-                                            .EndpointConfiguration(kinesisSettings.kinesisUrl, kinesisSettings.region)
-                                    )
-                                    .build()
+            .standard()
+            .withCredentials(credentials)
+            .withEndpointConfiguration(
+                AwsClientBuilder
+                    .EndpointConfiguration(kinesisSettings.kinesisUrl, kinesisSettings.region)
+            )
+            .build()
     }
 
     fun defaultClient(): AmazonKinesis {
         val roleToAssume = "arn:aws:iam::${kinesisSettings.awsAccountId}:role/${kinesisSettings.iamRoleToAssume}"
         val credentials = credentialFactory.credentials(roleToAssume)
         return AmazonKinesisClientBuilder
-                                    .standard()
-                                    .withCredentials(credentials)
-                                    .withEndpointConfiguration(
-                                        AwsClientBuilder
-                                            .EndpointConfiguration(kinesisSettings.kinesisUrl, kinesisSettings.region)
-                                    )
-                                    .build()
+            .standard()
+            .withCredentials(credentials)
+            .withEndpointConfiguration(
+                AwsClientBuilder
+                    .EndpointConfiguration(kinesisSettings.kinesisUrl, kinesisSettings.region)
+            )
+            .build()
     }
 }

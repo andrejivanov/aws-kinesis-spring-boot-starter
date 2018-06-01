@@ -19,6 +19,6 @@ class JacksonConfiguration {
         mapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
 
         return mapper
-                .registerModule(KotlinModule())
+            .registerModule(KotlinModule())
     }
 }

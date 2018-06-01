@@ -2,8 +2,6 @@ package de.bringmeister.spring.aws.kinesis
 
 import com.amazonaws.auth.AWSCredentialsProvider
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain
-import com.amazonaws.client.builder.AwsClientBuilder
-import com.amazonaws.services.kinesis.AmazonKinesisClientBuilder
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.springframework.boot.autoconfigure.AutoConfigureAfter
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
@@ -19,21 +17,26 @@ class AwsKinesisAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    fun clientConfigFactory(credentialsProvider: AWSCredentialsProvider,
-                            awsCredentialsProviderFactory: AWSCredentialsProviderFactory,
-                            kinesisSettings: AwsKinesisSettings) : ClientConfigFactory {
+    fun clientConfigFactory(
+        credentialsProvider: AWSCredentialsProvider,
+        awsCredentialsProviderFactory: AWSCredentialsProviderFactory,
+        kinesisSettings: AwsKinesisSettings
+    ): ClientConfigFactory {
 
         return ClientConfigFactory(credentialsProvider, awsCredentialsProviderFactory, kinesisSettings)
     }
 
     @Bean
     @ConditionalOnMissingBean
-    fun credentialsProvider(settings: AwsKinesisSettings) = DefaultAWSCredentialsProviderChain() as AWSCredentialsProvider
+    fun credentialsProvider(settings: AwsKinesisSettings) =
+        DefaultAWSCredentialsProviderChain() as AWSCredentialsProvider
 
     @Bean
     @ConditionalOnMissingBean
-    fun credentialsProviderFactory(kinesisSettings: AwsKinesisSettings,
-                                   credentialsProvider: AWSCredentialsProvider): AWSCredentialsProviderFactory {
+    fun credentialsProviderFactory(
+        kinesisSettings: AwsKinesisSettings,
+        credentialsProvider: AWSCredentialsProvider
+    ): AWSCredentialsProviderFactory {
 
         return STSAssumeRoleSessionCredentialsProviderFactory(credentialsProvider, kinesisSettings)
     }
@@ -52,7 +55,8 @@ class AwsKinesisAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     @ConditionalOnBean(ObjectMapper::class)
-    fun workerFactory(clientConfigFactory: ClientConfigFactory, recordMapper: RecordMapper) = WorkerFactory(clientConfigFactory, recordMapper)
+    fun workerFactory(clientConfigFactory: ClientConfigFactory, recordMapper: RecordMapper) =
+        WorkerFactory(clientConfigFactory, recordMapper)
 
     @Bean
     @ConditionalOnMissingBean
@@ -61,22 +65,28 @@ class AwsKinesisAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    fun kinesisClientProvider(awsKinesisSettings: AwsKinesisSettings,
-                              awsCredentialsProviderFactory: AWSCredentialsProviderFactory) = KinesisClientProvider(awsCredentialsProviderFactory, awsKinesisSettings)
+    fun kinesisClientProvider(
+        awsKinesisSettings: AwsKinesisSettings,
+        awsCredentialsProviderFactory: AWSCredentialsProviderFactory
+    ) = KinesisClientProvider(awsCredentialsProviderFactory, awsKinesisSettings)
 
     @Bean
     @ConditionalOnMissingBean
-    fun kinesisOutboundGateway(kinesisClientProvider: KinesisClientProvider,
-                               requestFactory: RequestFactory,
-                               streamInitializer: StreamInitializer): AwsKinesisOutboundGateway {
+    fun kinesisOutboundGateway(
+        kinesisClientProvider: KinesisClientProvider,
+        requestFactory: RequestFactory,
+        streamInitializer: StreamInitializer
+    ): AwsKinesisOutboundGateway {
         return AwsKinesisOutboundGateway(kinesisClientProvider, requestFactory, streamInitializer)
     }
 
     @Bean
     @ConditionalOnMissingBean
-    fun kinesisInboundGateway(workerFactory: WorkerFactory,
-                              workerStarter: WorkerStarter,
-                              streamInitializer: StreamInitializer): AwsKinesisInboundGateway {
+    fun kinesisInboundGateway(
+        workerFactory: WorkerFactory,
+        workerStarter: WorkerStarter,
+        streamInitializer: StreamInitializer
+    ): AwsKinesisInboundGateway {
         return AwsKinesisInboundGateway(workerFactory, workerStarter, streamInitializer)
     }
 
@@ -89,15 +99,19 @@ class AwsKinesisAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    fun kinesisListenerPostProcessor(inboundGateway: AwsKinesisInboundGateway,
-                                     listenerFactory: KinesisListenerProxyFactory): KinesisListenerPostProcessor {
+    fun kinesisListenerPostProcessor(
+        inboundGateway: AwsKinesisInboundGateway,
+        listenerFactory: KinesisListenerProxyFactory
+    ): KinesisListenerPostProcessor {
         return KinesisListenerPostProcessor(inboundGateway, listenerFactory)
     }
 
     @Bean
     @ConditionalOnMissingBean
-    fun streamInitializer(kinesisClientProvider: KinesisClientProvider,
-                          kinesisSettings: AwsKinesisSettings): StreamInitializer {
+    fun streamInitializer(
+        kinesisClientProvider: KinesisClientProvider,
+        kinesisSettings: AwsKinesisSettings
+    ): StreamInitializer {
         System.setProperty("com.amazonaws.sdk.disableCbor", "1")
         val kinesisClient = kinesisClientProvider.defaultClient()
         return StreamInitializer(kinesisClient, kinesisSettings)

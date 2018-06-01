@@ -16,7 +16,7 @@ import org.springframework.test.context.junit4.SpringRunner
 @ContextConfiguration(classes = [KinesisListenerProxyFactoryAopTest.DummyListener::class])
 class KinesisListenerProxyFactoryAopTest {
 
-    var kinesisListenerProxyFactory : KinesisListenerProxyFactory = KinesisListenerProxyFactory(AopProxyUtils())
+    var kinesisListenerProxyFactory: KinesisListenerProxyFactory = KinesisListenerProxyFactory(AopProxyUtils())
 
     @Autowired
     lateinit var dummyListener: DummyListener
@@ -27,9 +27,9 @@ class KinesisListenerProxyFactoryAopTest {
         val kinesisListenerProxies = kinesisListenerProxyFactory.proxiesFor(dummyListener)
 
         assertThat(kinesisListenerProxies).hasSize(2)
-        assertThat(kinesisListenerProxies.map {it.stream }).contains("stream-1", "stream-2")
-        assertThat(kinesisListenerProxies.map {it.bean }).allMatch { bean -> bean is DummyListener }
-        assertThat(kinesisListenerProxies.map {it.method }).allMatch { bean -> bean != null }
+        assertThat(kinesisListenerProxies.map { it.stream }).contains("stream-1", "stream-2")
+        assertThat(kinesisListenerProxies.map { it.bean }).allMatch { bean -> bean is DummyListener }
+        assertThat(kinesisListenerProxies.map { it.method }).allMatch { bean -> bean != null }
     }
 
     // This class will be autowired wrapped in a proxy. This proxy is created

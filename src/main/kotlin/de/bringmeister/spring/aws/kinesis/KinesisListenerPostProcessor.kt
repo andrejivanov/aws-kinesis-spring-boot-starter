@@ -5,8 +5,10 @@ import org.springframework.beans.factory.config.BeanPostProcessor
 import org.springframework.stereotype.Component
 
 @Component
-class KinesisListenerPostProcessor(private val kinesisOutboundGateway: AwsKinesisInboundGateway,
-                                   private val kinesisListenerProxyFactory: KinesisListenerProxyFactory) : BeanPostProcessor {
+class KinesisListenerPostProcessor(
+    private val kinesisOutboundGateway: AwsKinesisInboundGateway,
+    private val kinesisListenerProxyFactory: KinesisListenerProxyFactory
+) : BeanPostProcessor {
 
     override fun postProcessBeforeInitialization(bean: Any?, beanName: String?): Any {
         return bean!! // nothing to do in this case

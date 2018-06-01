@@ -5,7 +5,7 @@ import org.junit.Test
 
 class KinesisListenerProxyFactoryTest {
 
-    var kinesisListenerProxyFactory : KinesisListenerProxyFactory = KinesisListenerProxyFactory(AopProxyUtils())
+    var kinesisListenerProxyFactory: KinesisListenerProxyFactory = KinesisListenerProxyFactory(AopProxyUtils())
 
     @Test
     fun `should return empty list if no Kinesis listeners are present`() {

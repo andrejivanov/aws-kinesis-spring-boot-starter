@@ -14,11 +14,14 @@ class ClientConfigFactoryTest {
     private val credentialsProviderFactory = mock<AWSCredentialsProviderFactory>()
     private val credentialsProvider = mock<AWSCredentialsProvider>()
     private val settings = AwsKinesisSettingsTestFactory.settings().withRequired().withConsumerFor("my-kinesis-stream")
-    private val clientConfigFactory = ClientConfigFactory(credentialsProvider, credentialsProviderFactory, settings.build())
+    private val clientConfigFactory =
+        ClientConfigFactory(credentialsProvider, credentialsProviderFactory, settings.build())
 
     @Before
     fun setUp() {
-        whenever(credentialsProviderFactory.credentials("arn:aws:iam::100000000042:role/kinesis-user-role")).thenReturn(credentialsProvider)
+        whenever(credentialsProviderFactory.credentials("arn:aws:iam::100000000042:role/kinesis-user-role")).thenReturn(
+            credentialsProvider
+        )
     }
 
     @Test

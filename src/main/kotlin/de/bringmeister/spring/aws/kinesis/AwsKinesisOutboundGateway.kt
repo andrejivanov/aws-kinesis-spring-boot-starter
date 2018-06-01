@@ -2,9 +2,11 @@ package de.bringmeister.spring.aws.kinesis
 
 import org.slf4j.LoggerFactory
 
-class AwsKinesisOutboundGateway(private val clientProvider: KinesisClientProvider,
-                                private val requestFactory: RequestFactory,
-                                private val streamInitializer: StreamInitializer) {
+class AwsKinesisOutboundGateway(
+    private val clientProvider: KinesisClientProvider,
+    private val requestFactory: RequestFactory,
+    private val streamInitializer: StreamInitializer
+) {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
 
@@ -22,7 +24,9 @@ class AwsKinesisOutboundGateway(private val clientProvider: KinesisClientProvide
         val request = requestFactory.request(event)
         val result = kinesis.putRecord(request)
 
-        log.debug("Successfully put record. [stream={}, partitionKey={}, shardId={}, sequenceNumber={}]",
-            streamName, request.partitionKey, result.shardId, result.sequenceNumber)
+        log.debug(
+            "Successfully put record. [stream={}, partitionKey={}, shardId={}, sequenceNumber={}]",
+            streamName, request.partitionKey, result.shardId, result.sequenceNumber
+        )
     }
 }

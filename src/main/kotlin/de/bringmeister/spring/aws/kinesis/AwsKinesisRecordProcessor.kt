@@ -14,9 +14,11 @@ import com.amazonaws.services.kinesis.model.Record
 import org.slf4j.LoggerFactory
 import java.nio.charset.Charset
 
-class AwsKinesisRecordProcessor(private val recordMapper: RecordMapper,
-                                private val configuration: RecordProcessorConfiguration,
-                                private val handler: KinesisListenerProxy) : IRecordProcessor {
+class AwsKinesisRecordProcessor(
+    private val recordMapper: RecordMapper,
+    private val configuration: RecordProcessorConfiguration,
+    private val handler: KinesisListenerProxy
+) : IRecordProcessor {
 
     private val log = LoggerFactory.getLogger(this.javaClass.name)
 
@@ -33,8 +35,8 @@ class AwsKinesisRecordProcessor(private val recordMapper: RecordMapper,
         for (record in records) {
             var processedSuccessfully = false
             val recordData = Charset.forName("UTF-8")
-                    .decode(record.data)
-                    .toString()
+                .decode(record.data)
+                .toString()
 
             for (i in 0 until configuration.maxRetries) {
                 try {

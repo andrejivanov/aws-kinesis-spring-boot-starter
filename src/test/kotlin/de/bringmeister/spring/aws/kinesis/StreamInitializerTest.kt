@@ -14,8 +14,8 @@ import java.lang.IllegalStateException
 
 class StreamInitializerTest {
 
-    private var kinesis: AmazonKinesis = mock {  }
-    private var settings: AwsKinesisSettings = mock {  }
+    private var kinesis: AmazonKinesis = mock { }
+    private var settings: AwsKinesisSettings = mock { }
     private var streamInitializer: StreamInitializer = StreamInitializer(kinesis, settings)
 
     @Test
@@ -72,10 +72,10 @@ class StreamInitializerTest {
 
     private fun aDescriptionOfAnActiveStream(): DescribeStreamResult {
         return DescribeStreamResult()
-                    .withStreamDescription(
-                            StreamDescription()
-                                .withStreamStatus("ACTIVE")
-                    )
+            .withStreamDescription(
+                StreamDescription()
+                    .withStreamStatus("ACTIVE")
+            )
     }
 
     private fun aDescriptionOfAStreamInCreation(): DescribeStreamResult {

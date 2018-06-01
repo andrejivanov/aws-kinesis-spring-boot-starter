@@ -15,6 +15,7 @@ class KinesisLocalConfiguration {
     @Bean
     @Primary
     fun kinesisCredentialsProvider() = object : AWSCredentialsProviderFactory {
-        override fun credentials(roleToAssume: String) = AWSStaticCredentialsProvider(BasicAWSCredentials("no-key", "no-passwd"))
+        override fun credentials(roleToAssume: String) =
+            AWSStaticCredentialsProvider(BasicAWSCredentials("no-key", "no-passwd"))
     }
 }
