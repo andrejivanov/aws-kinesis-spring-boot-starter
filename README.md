@@ -70,6 +70,14 @@ aws:
     createStreams: true
     dynamo-db-settings:
       url: http://localhost:14568
+````
+
+Also, you must enable a Spring profile (`kinesis-local`):
+
+```
+spring:
+  profiles:
+    include: kinesis-local
 ```
 
 You can also see `JavaListenerTest` and `KotlinListenerTest.kt` for running examples. 
