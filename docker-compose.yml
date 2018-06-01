@@ -1,0 +1,10 @@
+version: "3.3"
+services:
+  kinesis:
+    image: instructure/kinesalite:latest
+    ports:
+      - 14567:4567
+  dynamodb:
+    image: richnorth/dynalite:latest
+    ports:
+      - 14568:4567
