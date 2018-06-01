@@ -15,7 +15,7 @@ aws-kinesis-spring-boot-starter
 
 This library is written in Kotlin. 
 However, it's perfectly **compatible with Java**. 
-Below you will find examples for both languages.
+You will find examples for both languages below.
 
 ## Installation
 
@@ -25,7 +25,7 @@ repositories {
     ...
     maven { url 'https://jitpack.io' }
 }
-compile "com.github.bringmeister:aws-kinesis-spring-boot-starter:$version"
+compile "com.github.bringmeister:aws-kinesis-spring-boot-starter:+"
 ```
 
 **Note:** See above for the latest version available!
@@ -35,7 +35,7 @@ compile "com.github.bringmeister:aws-kinesis-spring-boot-starter:$version"
 In order to use this library you need to configure some properties in your `application.yml`. 
 The following shows the minimal required configuration.
 This configuration will allow you to send and receive messages.
-Any stream used in your application will be created (as soon as it is first used) if it does not exist.
+Any stream used in your application will be created (as soon as it is used first) if it does not exist.
 
 ```
 aws:
@@ -47,6 +47,76 @@ aws:
     iam-role-to-assume: ExampleKinesisRole
     create-streams: true
 ```
+
+### Configuration Guide
+
+#### Local development
+
+Before your application goes live you typically want to develop and test your code locally.
+To do so, we have used Docker.
+You find a `docker-compose.yml` file in the root of this project.
+Run `docker-compose up` in order to start Kinesis (and DynamoDB).
+
+The configuration for local development looks like this:
+
+```
+aws:
+  kinesis:
+    region: local
+    kinesis-url: http://localhost:14567
+    consumer-group: example-service
+    aws-account-id: "222222222222"
+    iam-role-to-assume: ExampleKinesisRole
+    createStreams: true
+    dynamo-db-settings:
+      url: http://localhost:14568
+```
+
+You can also see `JavaListenerTest` and `KotlinListenerTest.kt` for running examples. 
+Both tests will use the same Docker images in order to send and receive messages.
+
+#### Creating streams automatically
+
+You can create streams automatically by turning the `create-streams` flag on:
+
+```
+aws:
+  kinesis:
+    ...
+    create-streams: true
+```
+
+By default, `create-streams` will be turned-off. 
+So if you don't specify anything, no streams will be created.
+
+#### Configuring listeners
+
+You can configure listeners in order to use a dedicated role and account for a stream.
+
+```
+aws:
+  kinesis:
+    ...
+    consumer:
+      - stream-name: my-special-stream
+        aws-account-id: "111111111111"
+        iam-role-to-assume: SpecialKinesisConsumer
+```
+
+#### Configure producers
+
+You can configure producers in order to use a dedicated role and account for a stream.
+
+```
+aws:
+  kinesis:
+    ...
+    producer:
+      - stream-name: my-special-stream
+        aws-account-id: "111111111111"
+        iam-role-to-assume: SpecialKinesisConsumer
+```
+
 
 ## Usage
 
@@ -130,3 +200,12 @@ class MyKinesisListener {
 ```
 
 See `KotlinListenerTest.kt` for an example.
+
+## Developer Guide
+
+We're using the official Kotlin Style Guide to format our code.
+Follow the link below for more information and instructions on how to configure the IntelliJ formatter according to this style guide.
+
+More:
+
+* https://kotlinlang.org/docs/reference/coding-conventions.html
