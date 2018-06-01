@@ -6,15 +6,17 @@ import com.amazonaws.services.kinesis.model.ResourceNotFoundException
 import org.slf4j.LoggerFactory
 import java.time.Instant.now
 
-class StreamInitializer(private val kinesis: AmazonKinesis,
-                        private val kinesisSettings: AwsKinesisSettings) {
+class StreamInitializer(
+    private val kinesis: AmazonKinesis,
+    private val kinesisSettings: AwsKinesisSettings
+) {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
 
     private val activeStreams = mutableListOf<String>()
 
     fun createStreamIfMissing(streamName: String, shardCount: Int = 1) {
-        if(kinesisSettings.createStreams && !activeStreams.contains(streamName)) {
+        if (kinesisSettings.createStreams && !activeStreams.contains(streamName)) {
             try {
                 val response = kinesis.describeStream(streamName)
                 if (!streamIsActive(response)) {

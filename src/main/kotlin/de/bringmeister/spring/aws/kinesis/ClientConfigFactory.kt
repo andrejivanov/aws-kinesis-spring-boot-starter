@@ -6,9 +6,11 @@ import com.amazonaws.services.kinesis.clientlibrary.lib.worker.KinesisClientLibC
 import java.net.InetAddress
 import java.util.UUID
 
-class ClientConfigFactory(private val credentialsProvider: AWSCredentialsProvider,
-                          private val awsCredentialsProviderFactory: AWSCredentialsProviderFactory,
-                          private val kinesisSettings: AwsKinesisSettings) {
+class ClientConfigFactory(
+    private val credentialsProvider: AWSCredentialsProvider,
+    private val awsCredentialsProviderFactory: AWSCredentialsProviderFactory,
+    private val kinesisSettings: AwsKinesisSettings
+) {
 
     fun consumerConfig(streamName: String): KinesisClientLibConfiguration {
 
@@ -18,12 +20,19 @@ class ClientConfigFactory(private val credentialsProvider: AWSCredentialsProvide
         val workerId = InetAddress.getLocalHost().canonicalHostName + ":" + UUID.randomUUID()
         val applicationName = "${kinesisSettings.consumerGroup}_$streamName"
 
-        return KinesisClientLibConfiguration(applicationName, streamName, credentials, credentialsProvider, credentialsProvider, workerId)
-                            .withInitialPositionInStream(TRIM_HORIZON)
-                            .withKinesisEndpoint(kinesisSettings.kinesisUrl)
-                            .withMetricsLevel(kinesisSettings.metricsLevel)
-                            .withDynamoDBEndpoint(kinesisSettings.dynamoDbSettings!!.url)
-                            .withInitialLeaseTableReadCapacity(kinesisSettings.dynamoDbSettings!!.leaseTableReadCapacity)
-                            .withInitialLeaseTableWriteCapacity(kinesisSettings.dynamoDbSettings!!.leaseTableWriteCapacity)
+        return KinesisClientLibConfiguration(
+            applicationName,
+            streamName,
+            credentials,
+            credentialsProvider,
+            credentialsProvider,
+            workerId
+        )
+            .withInitialPositionInStream(TRIM_HORIZON)
+            .withKinesisEndpoint(kinesisSettings.kinesisUrl)
+            .withMetricsLevel(kinesisSettings.metricsLevel)
+            .withDynamoDBEndpoint(kinesisSettings.dynamoDbSettings!!.url)
+            .withInitialLeaseTableReadCapacity(kinesisSettings.dynamoDbSettings!!.leaseTableReadCapacity)
+            .withInitialLeaseTableWriteCapacity(kinesisSettings.dynamoDbSettings!!.leaseTableWriteCapacity)
     }
 }

@@ -74,7 +74,7 @@ class ConfigurationPropertiesBuilder<T> {
     }
 
     private fun loadYamlProperties(fileName: String?): Properties {
-        if(fileName == null) {
+        if (fileName == null) {
             return Properties()
         }
         val resource = ClassPathResource(fileName)

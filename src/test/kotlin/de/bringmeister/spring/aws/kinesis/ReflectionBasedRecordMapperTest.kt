@@ -7,7 +7,8 @@ import org.junit.Test
 
 class ReflectionBasedRecordMapperTest {
 
-    val messageJson = "{\"streamName\":\"foo-event-stream\",\"data\":{\"foo\":\"any-field\"},\"metadata\":{\"sender\":\"test\"}}"
+    val messageJson =
+        "{\"streamName\":\"foo-event-stream\",\"data\":{\"foo\":\"any-field\"},\"metadata\":{\"sender\":\"test\"}}"
     val mapper = ObjectMapper().registerModule(KotlinModule())
 
     @Test
@@ -15,7 +16,8 @@ class ReflectionBasedRecordMapperTest {
 
         val handler = object {
             @KinesisListener(stream = "foo-event-stream")
-            fun handle(data: FooCreatedEvent, metadata: EventMetadata) { /* nothing to do */ }
+            fun handle(data: FooCreatedEvent, metadata: EventMetadata) { /* nothing to do */
+            }
         }
 
         val kinesisListenerProxy = KinesisListenerProxyFactory(AopProxyUtils()).proxiesFor(handler)[0]

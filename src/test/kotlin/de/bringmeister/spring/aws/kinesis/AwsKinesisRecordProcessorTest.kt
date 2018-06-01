@@ -30,7 +30,7 @@ class AwsKinesisRecordProcessorTest {
     val recordMapper = ReflectionBasedRecordMapper(mapper)
     val streamCheckpointer = mock<IRecordProcessorCheckpointer> {}
     val configuration = RecordProcessorConfiguration(2, 1)
-    var handlerMock = mock<(FooCreatedEvent, EventMetadata) -> Unit> {  }
+    var handlerMock = mock<(FooCreatedEvent, EventMetadata) -> Unit> { }
 
     var handler = object {
 
@@ -72,7 +72,7 @@ class AwsKinesisRecordProcessorTest {
 
         whenever(handlerMock.invoke(any(), any()))
             .doThrow(RuntimeException::class)
-            .then {  } // stop throwing
+            .then { } // stop throwing
 
         val record = wrap(messageJson)
         recordProcessor.processRecords(record)
@@ -147,7 +147,7 @@ class AwsKinesisRecordProcessorTest {
     private fun wrap(vararg recordJsons: String): ProcessRecordsInput {
         val records = recordJsons.toList().map { record -> Record().withData(ByteBuffer.wrap(record.toByteArray())) }
         return ProcessRecordsInput()
-                    .withRecords(records)
-                    .withCheckpointer(streamCheckpointer)
+            .withRecords(records)
+            .withCheckpointer(streamCheckpointer)
     }
 }

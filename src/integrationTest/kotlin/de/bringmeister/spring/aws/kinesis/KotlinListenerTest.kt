@@ -28,14 +28,16 @@ import org.testcontainers.containers.GenericContainer
 import java.util.concurrent.CountDownLatch
 
 @ActiveProfiles("kinesis-local")
-@SpringBootTest(classes = [
-    KotlinTestListener::class,
-    JacksonConfiguration::class,
-    JacksonAutoConfiguration::class,
-    AwsKinesisAutoConfiguration::class,
-    KinesisLocalConfiguration::class,
-    KotlinListenerTest.DummyAWSCredentialsConfiguration::class
-])
+@SpringBootTest(
+    classes = [
+        KotlinTestListener::class,
+        JacksonConfiguration::class,
+        JacksonAutoConfiguration::class,
+        AwsKinesisAutoConfiguration::class,
+        KinesisLocalConfiguration::class,
+        KotlinListenerTest.DummyAWSCredentialsConfiguration::class
+    ]
+)
 @RunWith(SpringRunner::class)
 class KotlinListenerTest {
 

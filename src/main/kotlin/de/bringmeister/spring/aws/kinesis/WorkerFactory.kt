@@ -4,8 +4,10 @@ import com.amazonaws.services.kinesis.clientlibrary.interfaces.v2.IRecordProcess
 import com.amazonaws.services.kinesis.clientlibrary.lib.worker.Worker
 import java.util.concurrent.TimeUnit
 
-class WorkerFactory(private val clientConfigFactory: ClientConfigFactory,
-                    private val recordMapper: RecordMapper) {
+class WorkerFactory(
+    private val clientConfigFactory: ClientConfigFactory,
+    private val recordMapper: RecordMapper
+) {
 
     fun worker(handler: KinesisListenerProxy): Worker {
 
@@ -17,9 +19,9 @@ class WorkerFactory(private val clientConfigFactory: ClientConfigFactory,
         val config = clientConfigFactory.consumerConfig(handler.stream)
 
         return Worker
-                .Builder()
-                .config(config)
-                .recordProcessorFactory(processorFactory)
-                .build()
+            .Builder()
+            .config(config)
+            .recordProcessorFactory(processorFactory)
+            .build()
     }
 }
