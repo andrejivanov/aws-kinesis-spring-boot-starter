@@ -63,13 +63,32 @@ class AwsKinesisProducerSettingsTest {
         val settings = builder<AwsKinesisSettings>()
             .populate(AwsKinesisSettings())
             .withPrefix("aws.kinesis")
+            .withProperty("aws.kinesis.region", "eu-central-1")
+            .validateUsing(localValidatorFactoryBean)
+            .build()
+
+        assertThat(settings.region, equalTo("eu-central-1"))
+        assertThat(settings.kinesisUrl, equalTo("https://kinesis.eu-central-1.amazonaws.com"))
+        assertThat(settings.dynamoDbSettings!!.url, equalTo("https://dynamodb.eu-central-1.amazonaws.com"))
+    }
+
+    @Test
+    fun `should override default settings`() {
+
+        val kinesisUrl = "http://localhost:1234/kinesis"
+        val dynamoDbUrl = "http://localhost:1234/dynamodb"
+        val settings = builder<AwsKinesisSettings>()
+            .populate(AwsKinesisSettings())
+            .withPrefix("aws.kinesis")
             .withProperty("aws.kinesis.region", "local")
-            .withProperty("aws.kinesis.kinesis-url", "http://localhost:14567")
+            .withProperty("aws.kinesis.kinesisUrl", kinesisUrl)
+            .withProperty("aws.kinesis.dynamoDbSettings.url", dynamoDbUrl)
             .validateUsing(localValidatorFactoryBean)
             .build()
 
         assertThat(settings.region, equalTo("local"))
-        assertThat(settings.kinesisUrl, equalTo("http://localhost:14567"))
+        assertThat(settings.kinesisUrl, equalTo(kinesisUrl))
+        assertThat(settings.dynamoDbSettings!!.url, equalTo(dynamoDbUrl))
     }
 
     @Test(expected = BindException::class)
@@ -79,16 +98,6 @@ class AwsKinesisProducerSettingsTest {
             .withPrefix("aws.kinesis")
             .validateUsing(localValidatorFactoryBean)
             .withProperty("aws.kinesis.kinesis-url", "http://localhost:14567")
-            .build()
-    }
-
-    @Test(expected = BindException::class)
-    fun `should fail if Kinesis URL is missing`() {
-        builder<AwsKinesisSettings>()
-            .populate(AwsKinesisSettings())
-            .withPrefix("aws.kinesis")
-            .validateUsing(localValidatorFactoryBean)
-            .withProperty("aws.kinesis.region", "local")
             .build()
     }
 }

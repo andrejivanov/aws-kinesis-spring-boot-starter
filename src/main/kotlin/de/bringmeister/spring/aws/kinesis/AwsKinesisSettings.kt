@@ -2,21 +2,39 @@ package de.bringmeister.spring.aws.kinesis
 
 import com.amazonaws.services.kinesis.metrics.interfaces.MetricsLevel
 import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.validation.annotation.Validated
 import javax.validation.constraints.NotNull
 
+@Validated
 @ConfigurationProperties(prefix = "aws.kinesis")
 class AwsKinesisSettings {
 
     @NotNull
     lateinit var region: String // Example: eu-central-1, local
+    lateinit var awsAccountId: String // Example: 123456789012
+    lateinit var iamRoleToAssume: String // Example: role_name
+    lateinit var consumerGroup: String // Example: my-service
 
-    @NotNull
-    lateinit var kinesisUrl: String // Example: https://kinesis.eu-central-1.amazonaws.com, http://localhost:14567
+    var kinesisUrl: String? = null // Example: http://localhost:14567
+        get() {
+            return field ?: return if (::region.isInitialized) {
+                "https://kinesis.$region.amazonaws.com"
+            } else {
+                return null
+            }
+        }
 
-    var awsAccountId: String? = null // Example: 123456789012
-    var iamRoleToAssume: String? = null // Example: role_name
-    var consumerGroup: String? = null // Example: my-service
     var dynamoDbSettings: DynamoDbSettings? = null
+        get() {
+            return field ?: return if (::region.isInitialized) {
+                val settings = DynamoDbSettings()
+                settings.url = "https://dynamodb.$region.amazonaws.com"
+                return settings
+            } else {
+                null
+            }
+        }
+
     var metricsLevel = MetricsLevel.NONE.name
     var createStreams: Boolean = false
     var creationTimeout: Int = 30
@@ -34,8 +52,8 @@ class AwsKinesisSettings {
     private fun defaultSettingsFor(stream: String): StreamSettings {
         val defaultSettings = StreamSettings()
         defaultSettings.streamName = stream
-        defaultSettings.awsAccountId = awsAccountId!!
-        defaultSettings.iamRoleToAssume = iamRoleToAssume!!
+        defaultSettings.awsAccountId = awsAccountId
+        defaultSettings.iamRoleToAssume = iamRoleToAssume
         return defaultSettings
     }
 }
