@@ -6,7 +6,7 @@ import org.springframework.stereotype.Component
 
 @Component
 class KinesisListenerPostProcessor(
-    private val kinesisOutboundGateway: AwsKinesisInboundGateway,
+    private val kinesisInboundGateway: AwsKinesisInboundGateway,
     private val kinesisListenerProxyFactory: KinesisListenerProxyFactory
 ) : BeanPostProcessor {
 
@@ -19,7 +19,7 @@ class KinesisListenerPostProcessor(
 
         kinesisListenerProxyFactory
             .proxiesFor(bean)
-            .forEach(kinesisOutboundGateway::register)
+            .forEach(kinesisInboundGateway::register)
 
         return bean
     }

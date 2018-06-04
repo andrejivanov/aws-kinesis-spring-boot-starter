@@ -23,6 +23,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.testcontainers.containers.GenericContainer;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 @ActiveProfiles("kinesis-local")
@@ -66,7 +67,7 @@ public class JavaListenerTest {
 
         outbound.send("foo-event-stream", fooEvent, metadata);
 
-        LATCH.await(); // wait for event-listener thread to process event
+        LATCH.await(1, TimeUnit.MINUTES); // wait for event-listener thread to process event
 
         // If we come to this point, the LATCH was counted down!
         // This means the event has been consumed - test succeeded!

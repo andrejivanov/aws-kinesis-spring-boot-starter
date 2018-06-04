@@ -41,7 +41,6 @@ Any stream used in your application will be created (as soon as it is used first
 aws:
   kinesis:
     region: eu-central-1
-    kinesis-url: https://kinesis.eu-central-1.amazonaws.com
     consumer-group: example-service
     aws-account-id: "000000000000"
     iam-role-to-assume: ExampleKinesisRole
