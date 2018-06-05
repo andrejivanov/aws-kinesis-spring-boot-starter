@@ -25,7 +25,6 @@ class ReflectionBasedRecordMapperTest {
         val recordMapper = ReflectionBasedRecordMapper(mapper)
         val message = recordMapper.deserializeFor(messageJson, kinesisListenerProxy)
 
-        assertThat(message.streamName()).isEqualTo("foo-event-stream")
         assertThat(message.data()).isEqualTo(FooCreatedEvent("any-field"))
         assertThat(message.metadata()).isEqualTo(EventMetadata("test"))
     }

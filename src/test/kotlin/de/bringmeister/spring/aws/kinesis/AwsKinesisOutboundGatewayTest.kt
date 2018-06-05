@@ -1,11 +1,12 @@
 package de.bringmeister.spring.aws.kinesis
 
 import com.amazonaws.services.kinesis.AmazonKinesis
-import com.amazonaws.services.kinesis.model.PutRecordRequest
+import com.amazonaws.services.kinesis.model.PutRecordsRequest
 import com.natpryce.hamkrest.assertion.assertThat
 import com.natpryce.hamkrest.equalTo
 import com.nhaarman.mockito_kotlin.any
 import com.nhaarman.mockito_kotlin.argumentCaptor
+import com.nhaarman.mockito_kotlin.eq
 import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.verify
 import com.nhaarman.mockito_kotlin.whenever
@@ -20,23 +21,24 @@ class AwsKinesisOutboundGatewayTest {
 
     @Test
     fun `should create and send kinesis request`() {
-        val request = mock<PutRecordRequest> { }
+        val request = mock<PutRecordsRequest> { }
         val producer = mock<AmazonKinesis> { }
 
-        whenever(requestFactory.request(any<KinesisEvent<FooCreatedEvent, EventMetadata>>())).thenReturn(request)
+        whenever(requestFactory.request(eq("foo-stream"), any<List<KinesisEvent<FooCreatedEvent, EventMetadata>>>())).thenReturn(request)
         whenever(clientProvider.clientFor("foo-stream")).thenReturn(producer)
-        whenever(producer.putRecord(any())).thenReturn(mock { })
+        whenever(producer.putRecords(any())).thenReturn(mock { })
 
         val event = FooCreatedEvent("any-value")
         val metadata = mock<EventMetadata> { }
         outboundGateway.send("foo-stream", data = event, metadata = metadata)
 
-        val captor = argumentCaptor<KinesisEvent<FooCreatedEvent, EventMetadata>>()
-        verify(requestFactory).request(captor.capture())
-        assertThat(captor.firstValue.streamName(), equalTo("foo-stream"))
-        assertThat(captor.firstValue.data(), equalTo(event))
-        assertThat(captor.firstValue.metadata(), equalTo(metadata))
+        val stringCaptor = argumentCaptor<String>()
+        val dataCaptor = argumentCaptor<List<KinesisEvent<FooCreatedEvent, EventMetadata>>>()
+        verify(requestFactory).request(stringCaptor.capture(), dataCaptor.capture())
+        assertThat(stringCaptor.firstValue, equalTo("foo-stream"))
+        assertThat(dataCaptor.firstValue[0].data(), equalTo(event))
+        assertThat(dataCaptor.firstValue[0].metadata(), equalTo(metadata))
         verify(clientProvider).clientFor("foo-stream")
-        verify(producer).putRecord(request)
+        verify(producer).putRecords(request)
     }
 }
