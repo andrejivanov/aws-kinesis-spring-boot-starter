@@ -35,17 +35,14 @@ compile "com.github.bringmeister:aws-kinesis-spring-boot-starter:+"
 In order to use this library you need to configure some properties in your `application.yml`. 
 The following shows the minimal required configuration.
 This configuration will allow you to send and receive messages.
-Any stream used in your application will be created (as soon as it is used first) if it does not exist.
 
 ```
 aws:
   kinesis:
     region: eu-central-1
-    kinesis-url: https://kinesis.eu-central-1.amazonaws.com
     consumer-group: example-service
     aws-account-id: "000000000000"
     iam-role-to-assume: ExampleKinesisRole
-    create-streams: true
 ```
 
 ### Configuration Guide
@@ -71,6 +68,7 @@ aws:
     dynamo-db-settings:
       url: http://localhost:14568
 ````
+Any stream used in your application will be created (as soon as it is used first) if it does not exist.
 
 Also, you must enable a Spring profile (`kinesis-local`):
 
