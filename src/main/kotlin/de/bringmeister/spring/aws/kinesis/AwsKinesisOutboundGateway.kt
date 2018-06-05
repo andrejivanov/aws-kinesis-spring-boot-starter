@@ -11,22 +11,17 @@ class AwsKinesisOutboundGateway(
     private val log = LoggerFactory.getLogger(this.javaClass)
 
     fun <DataType, MetadataType> send(streamName: String, data: DataType, metadata: MetadataType) {
-        send(KinesisEventWrapper(streamName, data, metadata))
+        send(streamName, KinesisEventWrapper(data, metadata))
     }
 
-    private fun send(event: KinesisEvent<*, *>) {
-
-        val streamName = event.streamName()
+    fun send(streamName: String, vararg payload: KinesisEvent<*, *>) {
 
         streamInitializer.createStreamIfMissing(streamName)
 
         val kinesis = clientProvider.clientFor(streamName)
-        val request = requestFactory.request(event)
-        val result = kinesis.putRecord(request)
+        val request = requestFactory.request(streamName, *payload)
+        val result = kinesis.putRecords(request)
 
-        log.debug(
-            "Successfully put record. [stream={}, partitionKey={}, shardId={}, sequenceNumber={}]",
-            streamName, request.partitionKey, result.shardId, result.sequenceNumber
-        )
+        log.debug("Successfully put records. [stream={}, records={}]", streamName, result.records.size)
     }
 }

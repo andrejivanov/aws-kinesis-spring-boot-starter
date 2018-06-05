@@ -7,8 +7,7 @@ import org.junit.Test
 
 class ReflectionBasedRecordMapperTest {
 
-    val messageJson =
-        "{\"streamName\":\"foo-event-stream\",\"data\":{\"foo\":\"any-field\"},\"metadata\":{\"sender\":\"test\"}}"
+    val messageJson = """{"data":{"foo":"any-field"},"metadata":{"sender":"test"}}"""
     val mapper = ObjectMapper().registerModule(KotlinModule())
 
     @Test
@@ -25,7 +24,6 @@ class ReflectionBasedRecordMapperTest {
         val recordMapper = ReflectionBasedRecordMapper(mapper)
         val message = recordMapper.deserializeFor(messageJson, kinesisListenerProxy)
 
-        assertThat(message.streamName()).isEqualTo("foo-event-stream")
         assertThat(message.data()).isEqualTo(FooCreatedEvent("any-field"))
         assertThat(message.metadata()).isEqualTo(EventMetadata("test"))
     }

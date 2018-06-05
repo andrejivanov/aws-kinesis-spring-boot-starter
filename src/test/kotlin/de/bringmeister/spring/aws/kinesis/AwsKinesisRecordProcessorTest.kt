@@ -25,7 +25,7 @@ import java.nio.ByteBuffer
 
 class AwsKinesisRecordProcessorTest {
 
-    val messageJson = """{"streamName":"foo-event-stream","data":{"foo":"any-field"},"metadata":{"sender":"test"}}"""
+    val messageJson = """{"data":{"foo":"any-field"},"metadata":{"sender":"test"}}"""
     val mapper = ObjectMapper().registerModule(KotlinModule())
     val recordMapper = ReflectionBasedRecordMapper(mapper)
     val streamCheckpointer = mock<IRecordProcessorCheckpointer> {}
