@@ -8,7 +8,7 @@ import java.util.UUID
 
 class RequestFactory(private val objectMapper: ObjectMapper) {
 
-    fun request(streamName: String, vararg payload: KinesisEvent<*, *>): PutRecordsRequest {
+    fun request(streamName: String, vararg payload: Record<*, *>): PutRecordsRequest {
         return PutRecordsRequest()
             .withStreamName(streamName)
             .withRecords(
