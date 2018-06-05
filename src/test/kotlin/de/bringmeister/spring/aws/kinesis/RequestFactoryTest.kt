@@ -8,7 +8,7 @@ class RequestFactoryTest {
 
     val objectMapper = ObjectMapper()
     val requestFactory = RequestFactory(objectMapper)
-    val event = KinesisEventWrapper("foo-stream", FooCreatedEvent("any-value"), EventMetadata("test"));
+    val event = KinesisEventWrapper(FooCreatedEvent("any-value"), EventMetadata("test"));
 
     @Test
     fun `should use event stream name for request`() {
@@ -26,6 +26,6 @@ class RequestFactoryTest {
     fun `should serialize message and meta data`() {
         val request = requestFactory.request("foo-stream", event)
         val content = String(request.records[0].data.array())
-        assertThat(content).isEqualTo("""[{"streamName":"foo-stream","data":{"foo":"any-value"},"metadata":{"sender":"test"}}]""")
+        assertThat(content).isEqualTo("""{"data":{"foo":"any-value"},"metadata":{"sender":"test"}}""")
     }
 }

@@ -8,17 +8,13 @@ import java.util.UUID
 
 class RequestFactory(private val objectMapper: ObjectMapper) {
 
-    fun request(streamName: String, event: KinesisEvent<*, *>): PutRecordsRequest {
-        return request(streamName, listOf(event))
-    }
-
-    fun request(streamName: String, event: List<KinesisEvent<*, *>>): PutRecordsRequest {
+    fun request(streamName: String, vararg payload: KinesisEvent<*, *>): PutRecordsRequest {
         return PutRecordsRequest()
             .withStreamName(streamName)
             .withRecords(
-                event.map {
+                payload.map {
                     PutRecordsRequestEntry()
-                        .withData(ByteBuffer.wrap(objectMapper.writeValueAsBytes(event)))
+                        .withData(ByteBuffer.wrap(objectMapper.writeValueAsBytes(it)))
                         .withPartitionKey(UUID.randomUUID().toString())
                 }
             )

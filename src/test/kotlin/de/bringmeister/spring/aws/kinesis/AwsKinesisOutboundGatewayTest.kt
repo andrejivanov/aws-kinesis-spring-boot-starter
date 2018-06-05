@@ -24,20 +24,20 @@ class AwsKinesisOutboundGatewayTest {
         val request = mock<PutRecordsRequest> { }
         val producer = mock<AmazonKinesis> { }
 
-        whenever(requestFactory.request(eq("foo-stream"), any<List<KinesisEvent<FooCreatedEvent, EventMetadata>>>())).thenReturn(request)
+        whenever(requestFactory.request(eq("foo-stream"), any<KinesisEvent<FooCreatedEvent, EventMetadata>>())).thenReturn(request)
         whenever(clientProvider.clientFor("foo-stream")).thenReturn(producer)
         whenever(producer.putRecords(any())).thenReturn(mock { })
 
         val event = FooCreatedEvent("any-value")
         val metadata = mock<EventMetadata> { }
-        outboundGateway.send("foo-stream", data = event, metadata = metadata)
+        outboundGateway.send("foo-stream", KinesisEventWrapper(event, metadata))
 
         val stringCaptor = argumentCaptor<String>()
-        val dataCaptor = argumentCaptor<List<KinesisEvent<FooCreatedEvent, EventMetadata>>>()
+        val dataCaptor = argumentCaptor<KinesisEvent<FooCreatedEvent, EventMetadata>>()
         verify(requestFactory).request(stringCaptor.capture(), dataCaptor.capture())
         assertThat(stringCaptor.firstValue, equalTo("foo-stream"))
-        assertThat(dataCaptor.firstValue[0].data(), equalTo(event))
-        assertThat(dataCaptor.firstValue[0].metadata(), equalTo(metadata))
+        assertThat(dataCaptor.firstValue.data(), equalTo(event))
+        assertThat(dataCaptor.firstValue.metadata(), equalTo(metadata))
         verify(clientProvider).clientFor("foo-stream")
         verify(producer).putRecords(request)
     }

@@ -7,8 +7,7 @@ import org.junit.Test
 
 class ReflectionBasedRecordMapperTest {
 
-    val messageJson =
-        "{\"streamName\":\"foo-event-stream\",\"data\":{\"foo\":\"any-field\"},\"metadata\":{\"sender\":\"test\"}}"
+    val messageJson = """{"data":{"foo":"any-field"},"metadata":{"sender":"test"}}"""
     val mapper = ObjectMapper().registerModule(KotlinModule())
 
     @Test

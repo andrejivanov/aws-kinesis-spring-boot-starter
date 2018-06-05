@@ -11,6 +11,7 @@ import de.bringmeister.spring.aws.kinesis.AwsKinesisOutboundGateway
 import de.bringmeister.spring.aws.kinesis.EventMetadata
 import de.bringmeister.spring.aws.kinesis.FooCreatedEvent
 import de.bringmeister.spring.aws.kinesis.JacksonConfiguration
+import de.bringmeister.spring.aws.kinesis.KinesisEventWrapper
 import de.bringmeister.spring.aws.kinesis.KotlinTestListener
 import de.bringmeister.spring.aws.kinesis.local.KinesisLocalConfiguration
 import org.junit.ClassRule
@@ -70,7 +71,7 @@ class KotlinListenerTest {
         val fooEvent = FooCreatedEvent("any-field")
         val metadata = EventMetadata("test")
 
-        outbound.send("foo-event-stream", fooEvent, metadata)
+        outbound.send("foo-event-stream", KinesisEventWrapper(fooEvent, metadata))
 
         latch.await(1, TimeUnit.MINUTES) // wait for event-listener thread to process event
 
