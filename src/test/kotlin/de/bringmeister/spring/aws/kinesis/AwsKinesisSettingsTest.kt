@@ -25,12 +25,12 @@ class AwsKinesisProducerSettingsTest {
         val settings = builder<AwsKinesisSettings>()
             .populate(AwsKinesisSettings())
             .withPrefix("aws.kinesis")
+            .withProperty("region", "local")
+            .withProperty("kinesis-url", "http://localhost:14567")
+            .withProperty("producer[0].streamName", "foo-event-stream")
+            .withProperty("producer[0].awsAccountId", "222222222222")
+            .withProperty("producer[0].iamRoleToAssume", "ExampleKinesisProducerRole")
             .validateUsing(localValidatorFactoryBean)
-            .withProperty("aws.kinesis.region", "local")
-            .withProperty("aws.kinesis.kinesis-url", "http://localhost:14567")
-            .withProperty("aws.kinesis.producer[0].streamName", "foo-event-stream")
-            .withProperty("aws.kinesis.producer[0].awsAccountId", "222222222222")
-            .withProperty("aws.kinesis.producer[0].iamRoleToAssume", "ExampleKinesisProducerRole")
             .build()
 
         assertThat(settings.producer[0].streamName, equalTo("foo-event-stream"))
@@ -44,12 +44,12 @@ class AwsKinesisProducerSettingsTest {
         val settings = builder<AwsKinesisSettings>()
             .populate(AwsKinesisSettings())
             .withPrefix("aws.kinesis")
+            .withProperty("region", "local")
+            .withProperty("kinesis-url", "http://localhost:14567")
+            .withProperty("consumer[0].streamName", "foo-event-stream")
+            .withProperty("consumer[0].awsAccountId", "111111111111")
+            .withProperty("consumer[0].iamRoleToAssume", "ExampleKinesisConsumerRole")
             .validateUsing(localValidatorFactoryBean)
-            .withProperty("aws.kinesis.region", "local")
-            .withProperty("aws.kinesis.kinesis-url", "http://localhost:14567")
-            .withProperty("aws.kinesis.consumer[0].streamName", "foo-event-stream")
-            .withProperty("aws.kinesis.consumer[0].awsAccountId", "111111111111")
-            .withProperty("aws.kinesis.consumer[0].iamRoleToAssume", "ExampleKinesisConsumerRole")
             .build()
 
         assertThat(settings.consumer[0].streamName, equalTo("foo-event-stream"))
@@ -63,7 +63,7 @@ class AwsKinesisProducerSettingsTest {
         val settings = builder<AwsKinesisSettings>()
             .populate(AwsKinesisSettings())
             .withPrefix("aws.kinesis")
-            .withProperty("aws.kinesis.region", "eu-central-1")
+            .withProperty("region", "eu-central-1")
             .validateUsing(localValidatorFactoryBean)
             .build()
 
@@ -80,9 +80,9 @@ class AwsKinesisProducerSettingsTest {
         val settings = builder<AwsKinesisSettings>()
             .populate(AwsKinesisSettings())
             .withPrefix("aws.kinesis")
-            .withProperty("aws.kinesis.region", "local")
-            .withProperty("aws.kinesis.kinesisUrl", kinesisUrl)
-            .withProperty("aws.kinesis.dynamoDbSettings.url", dynamoDbUrl)
+            .withProperty("region", "local")
+            .withProperty("kinesisUrl", kinesisUrl)
+            .withProperty("dynamoDbSettings.url", dynamoDbUrl)
             .validateUsing(localValidatorFactoryBean)
             .build()
 
@@ -93,11 +93,28 @@ class AwsKinesisProducerSettingsTest {
 
     @Test(expected = BindException::class)
     fun `should fail if region is missing`() {
+
         builder<AwsKinesisSettings>()
             .populate(AwsKinesisSettings())
             .withPrefix("aws.kinesis")
+            .withProperty("kinesis-url", "http://localhost:14567")
             .validateUsing(localValidatorFactoryBean)
-            .withProperty("aws.kinesis.kinesis-url", "http://localhost:14567")
             .build()
+    }
+
+    @Test
+    fun `should allow retry configuration`() {
+
+        val settings = builder<AwsKinesisSettings>()
+            .populate(AwsKinesisSettings())
+            .withPrefix("aws.kinesis")
+            .withProperty("region", "eu-central-1")
+            .withProperty("retry.maxRetries", "3")
+            .withProperty("retry.backoffTimeInMilliSeconds", "23")
+            .validateUsing(localValidatorFactoryBean)
+            .build()
+
+        assertThat(settings.retry.maxRetries, equalTo(3))
+        assertThat(settings.retry.backoffTimeInMilliSeconds, equalTo(23L))
     }
 }

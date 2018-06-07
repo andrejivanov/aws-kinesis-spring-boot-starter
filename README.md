@@ -109,6 +109,19 @@ aws:
         iam-role-to-assume: SpecialKinesisConsumer
 ```
 
+By default, events won't be retried. When the processing of an event fails (can't be deserialized for example), it will 
+be skipped and the next event will be processed. Retrying of events can be activated in the configuration like this:
+
+```
+aws:
+  kinesis:
+    ...
+    retry:
+        maxRetries: 5
+        backoffTimeInMilliSeconds: 1000 // wait 1 second between retries
+    ...
+```
+
 #### Configure producers
 
 You can configure producers in order to use a dedicated role and account for a stream.

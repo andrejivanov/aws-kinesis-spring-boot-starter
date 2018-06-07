@@ -11,6 +11,7 @@ import com.nhaarman.mockito_kotlin.whenever
 import org.junit.Test
 import org.mockito.Mockito.doReturn
 import java.lang.IllegalStateException
+import java.util.concurrent.TimeUnit
 
 class StreamInitializerTest {
 
@@ -38,9 +39,9 @@ class StreamInitializerTest {
             .whenever(settings)
             .createStreams
 
-        doReturn(30)
+        doReturn(TimeUnit.SECONDS.toMillis(30))
             .whenever(settings)
-            .creationTimeout
+            .creationTimeoutInMilliSeconds
 
         whenever(kinesis.describeStream("MY_STREAM"))
             .doThrow(ResourceNotFoundException("Stream not found!")) // not found exception
@@ -59,9 +60,9 @@ class StreamInitializerTest {
             .whenever(settings)
             .createStreams
 
-        doReturn(1)
+        doReturn(1L)
             .whenever(settings)
-            .creationTimeout
+            .creationTimeoutInMilliSeconds
 
         doReturn(aDescriptionOfAStreamInCreation())
             .whenever(kinesis)

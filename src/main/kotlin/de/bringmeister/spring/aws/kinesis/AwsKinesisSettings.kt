@@ -3,6 +3,7 @@ package de.bringmeister.spring.aws.kinesis
 import com.amazonaws.services.kinesis.metrics.interfaces.MetricsLevel
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.validation.annotation.Validated
+import java.util.concurrent.TimeUnit
 import javax.validation.constraints.NotNull
 
 @Validated
@@ -14,6 +15,8 @@ class AwsKinesisSettings {
     lateinit var awsAccountId: String // Example: 123456789012
     lateinit var iamRoleToAssume: String // Example: role_name
     lateinit var consumerGroup: String // Example: my-service
+
+    var retry: RetrySettings = RetrySettings()
 
     var kinesisUrl: String? = null // Example: http://localhost:14567
         get() {
@@ -37,7 +40,7 @@ class AwsKinesisSettings {
 
     var metricsLevel = MetricsLevel.NONE.name
     var createStreams: Boolean = false
-    var creationTimeout: Int = 30
+    var creationTimeoutInMilliSeconds = TimeUnit.SECONDS.toMillis(30)
     var consumer: MutableList<StreamSettings> = mutableListOf()
     var producer: MutableList<StreamSettings> = mutableListOf()
 
@@ -56,6 +59,16 @@ class AwsKinesisSettings {
         defaultSettings.iamRoleToAssume = iamRoleToAssume
         return defaultSettings
     }
+}
+
+class RetrySettings {
+
+    companion object {
+        const val NO_RETRIES = 0
+    }
+
+    var maxRetries = NO_RETRIES
+    var backoffTimeInMilliSeconds = TimeUnit.SECONDS.toMillis(1)
 }
 
 class DynamoDbSettings {
