@@ -8,7 +8,7 @@ class RequestFactoryTest {
 
     val objectMapper = ObjectMapper()
     val requestFactory = RequestFactory(objectMapper)
-    val event = KinesisEventWrapper(FooCreatedEvent("any-value"), EventMetadata("test"));
+    val event = Record(FooCreatedEvent("any-value"), EventMetadata("test"));
 
     @Test
     fun `should use event stream name for request`() {

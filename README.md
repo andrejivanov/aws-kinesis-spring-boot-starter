@@ -143,7 +143,8 @@ public class MyService {
     }
 
     public void sendMyMessage() {
-        gateway.send("my-stream", new MyMessage("my content"), new MyMetadata("my metadata")); 
+        Record record = new Record(new MyMessage("my content"), new MyMetadata("my metadata"));
+        gateway.send("my-stream", record); 
     }
 }
 ```
@@ -156,7 +157,8 @@ Kotlin example:
 @Service
 class MyService(private val gateway: AwsKinesisOutboundGateway) {
     fun sendMyMessage() {        
-        gateway.send("my-stream", MyMessage("my content"), MyMetadata("my metadata"))
+        val record = Record(MyMessage("my content"), MyMetadata("my metadata"))
+        gateway.send("my-stream", record)
     }
 }
 ```

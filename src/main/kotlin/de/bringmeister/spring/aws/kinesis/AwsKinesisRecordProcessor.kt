@@ -59,7 +59,7 @@ class AwsKinesisRecordProcessor(
     private fun processRecord(recordData: String) {
         log.debug("Received message: {}", recordData)
         val message = recordMapper.deserializeFor(recordData, handler)
-        handler.invoke(message.data(), message.metadata())
+        handler.invoke(message.data, message.metadata)
     }
 
     private fun checkpoint(checkpointer: IRecordProcessorCheckpointer) {

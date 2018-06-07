@@ -65,7 +65,7 @@ public class JavaListenerTest {
         FooCreatedEvent fooEvent = new FooCreatedEvent("any-field");
         EventMetadata metadata = new EventMetadata("test");
 
-        outbound.send("foo-event-stream", fooEvent, metadata);
+        outbound.send("foo-event-stream", new Record(fooEvent, metadata));
 
         LATCH.await(1, TimeUnit.MINUTES); // wait for event-listener thread to process event
 
