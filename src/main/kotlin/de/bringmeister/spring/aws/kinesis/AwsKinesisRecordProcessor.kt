@@ -32,12 +32,15 @@ class AwsKinesisRecordProcessor(
     }
 
     private fun processRecordsWithRetries(records: List<Record>) {
+        log.trace("Received [{}] records", records.size)
         for (record in records) {
             var processedSuccessfully = false
             val recordData = Charset.forName("UTF-8")
                 .decode(record.data)
                 .toString()
 
+            log.trace("Record [{}] with data [{}]", record.sequenceNumber, recordData)
+            
             for (i in 0 until configuration.maxRetries) {
                 try {
                     processRecord(recordData)
