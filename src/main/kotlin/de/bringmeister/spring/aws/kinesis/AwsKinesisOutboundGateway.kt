@@ -16,8 +16,10 @@ class AwsKinesisOutboundGateway(
 
         val kinesis = clientProvider.clientFor(streamName)
         val request = requestFactory.request(streamName, *records)
+
+        log.trace("Sending [{}] to stream [{}]", records, streamName)
         val result = kinesis.putRecords(request)
 
-        log.debug("Successfully put records. [stream={}, records={}]", streamName, result.records.size)
+        log.debug("Successfully send [{}] records to stream [{}]", result.records.size, streamName)
     }
 }
