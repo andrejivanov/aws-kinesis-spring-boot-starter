@@ -45,7 +45,7 @@ class ConfigurationPropertiesBuilder<T> {
     }
 
     fun withProperty(key: String, value: String): ConfigurationPropertiesBuilder<T> {
-        properties.setProperty(key, value)
+        properties.setProperty("$prefix.$key", value)
         return this
     }
 

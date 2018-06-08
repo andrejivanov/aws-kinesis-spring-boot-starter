@@ -20,7 +20,7 @@ class AwsKinesisRecordProcessor(
     private val handler: KinesisListenerProxy
 ) : IRecordProcessor {
 
-    private val log = LoggerFactory.getLogger(this.javaClass.name)
+    private val log = LoggerFactory.getLogger(javaClass.name)
 
     override fun initialize(initializationInput: InitializationInput?) {
         log.info("Initializing worker for shard ${initializationInput!!.shardId}")
@@ -40,8 +40,9 @@ class AwsKinesisRecordProcessor(
                 .toString()
 
             log.trace("Record [{}] with data [{}]", record.sequenceNumber, recordData)
-            
-            for (i in 0 until configuration.maxRetries) {
+
+            val maxAttempts = 1 + configuration.maxRetries
+            for (attempt in 1..maxAttempts) {
                 try {
                     processRecord(recordData)
                     processedSuccessfully = true
@@ -54,36 +55,36 @@ class AwsKinesisRecordProcessor(
             }
 
             if (!processedSuccessfully) {
-                log.error("Couldn't process record $record. Skipping the record.")
+                log.error("Couldn't process record $record. Skipping it.")
             }
         }
     }
 
     private fun processRecord(recordData: String) {
-        log.debug("Received message: {}", recordData)
+        log.debug("Received message: [{}]", recordData)
         val message = recordMapper.deserializeFor(recordData, handler)
         handler.invoke(message.data, message.metadata)
     }
 
     private fun checkpoint(checkpointer: IRecordProcessorCheckpointer) {
         log.debug("Checkpointing")
-        val maxRetries = configuration.maxRetries
-        for (retries in 0 until maxRetries) {
+        val maxAttempts = 1 + configuration.maxRetries
+        for (attempt in 1..maxAttempts) {
             try {
                 checkpointer.checkpoint()
                 break
             } catch (e: ThrottlingException) {
-                if (retries == maxRetries - 1) {
-                    log.error("Couldn't store checkpoint after max retries.", e)
+                if (attempt == maxAttempts) {
+                    log.error("Couldn't store checkpoint after max attempts of [{}].", maxAttempts, e)
                     break
                 }
-                log.warn("Transient issue during checkpointing - attempt ${retries + 1} of $maxRetries", e)
+                log.warn("Transient issue during checkpointing - attempt $attempt of $maxAttempts", e)
             } catch (e: KinesisClientLibDependencyException) {
-                if (retries == maxRetries - 1) {
+                if (attempt == maxAttempts) {
                     log.error("Couldn't store checkpoint after max retries.", e)
                     break
                 }
-                log.warn("Transient issue during checkpointing - attempt ${retries + 1} of $maxRetries", e)
+                log.warn("Transient issue during checkpointing - attempt $attempt of $maxAttempts", e)
             } catch (se: ShutdownException) {
                 log.info("Application is shutting down. Skipping checkpoint.", se)
                 break

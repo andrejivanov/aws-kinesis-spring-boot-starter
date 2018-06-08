@@ -23,22 +23,22 @@ class StreamInitializer(
                     waitForStreamToBecomeActive(streamName)
                 }
             } catch (ex: ResourceNotFoundException) {
-                log.info("Creating stream. [streamName=$streamName]")
+                log.info("Creating stream [{}]", streamName)
                 kinesis.createStream(streamName, shardCount)
                 waitForStreamToBecomeActive(streamName)
             }
             activeStreams.add(streamName)
-            log.info("Stream is active. [streamName=$streamName]")
+            log.info("Stream [{}] is active.", streamName)
         }
     }
 
     private fun waitForStreamToBecomeActive(streamName: String) {
-        log.debug("Waiting for stream to become active. [streamName=$streamName]")
-        val thirtySecondsInTheFuture = now().plusSeconds(kinesisSettings.creationTimeout.toLong())
-        while (now().isBefore(thirtySecondsInTheFuture)) {
+        log.debug("Waiting for stream [{}] to become active.", streamName)
+        val creationTimeout = now().plusMillis(kinesisSettings.creationTimeoutInMilliSeconds)
+        while (now().isBefore(creationTimeout)) {
             try {
                 val response = kinesis.describeStream(streamName)
-                log.debug("Current stream status: [${response.streamDescription.streamStatus}]")
+                log.debug("Current stream status: [{}]", response.streamDescription.streamStatus)
                 if (streamIsActive(response)) {
                     return
                 }
