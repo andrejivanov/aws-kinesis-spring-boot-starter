@@ -23,7 +23,7 @@ class AwsKinesisRecordProcessor(
     private val log = LoggerFactory.getLogger(javaClass.name)
 
     override fun initialize(initializationInput: InitializationInput?) {
-        log.info("Initializing worker for shard ${initializationInput!!.shardId}")
+        log.info("Initializing worker for stream [{}] and shard [{}]", handler.stream, initializationInput!!.shardId)
     }
 
     override fun processRecords(processRecordsInput: ProcessRecordsInput?) {
@@ -32,14 +32,14 @@ class AwsKinesisRecordProcessor(
     }
 
     private fun processRecordsWithRetries(records: List<Record>) {
-        log.trace("Received [{}] records", records.size)
+        log.trace("Received [{}] records on stream [{}]", records.size, handler.stream)
         for (record in records) {
             var processedSuccessfully = false
             val recordData = Charset.forName("UTF-8")
                 .decode(record.data)
                 .toString()
 
-            log.trace("Record [{}] with data [{}]", record.sequenceNumber, recordData)
+            log.trace("Stream [{}]: \nData [{}]", handler.stream, recordData)
 
             val maxAttempts = 1 + configuration.maxRetries
             for (attempt in 1..maxAttempts) {
@@ -61,7 +61,7 @@ class AwsKinesisRecordProcessor(
     }
 
     private fun processRecord(recordData: String) {
-        log.debug("Received message: [{}]", recordData)
+        log.debug("Processing record.")
         val message = recordMapper.deserializeFor(recordData, handler)
         handler.invoke(message.data, message.metadata)
     }
