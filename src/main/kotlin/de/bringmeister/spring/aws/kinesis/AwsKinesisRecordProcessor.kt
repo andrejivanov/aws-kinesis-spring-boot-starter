@@ -47,15 +47,18 @@ class AwsKinesisRecordProcessor(
                     processRecord(recordData)
                     processedSuccessfully = true
                     break
-                } catch (t: Throwable) {
-                    log.warn("Caught throwable while processing record [{}]", record, t)
+                } catch (e: Exception) {
+                    log.error(
+                        "Exception while processing record. [sequenceNumber=${record.sequenceNumber}, partitionKey=${record.partitionKey}]",
+                        e
+                    )
                 }
 
                 backoff()
             }
 
             if (!processedSuccessfully) {
-                log.error("Couldn't process record $record. Skipping it.")
+                log.warn("Processing of record failed. Skipping it. [sequenceNumber=${record.sequenceNumber}, partitionKey=${record.partitionKey}, attempts=$maxAttempts")
             }
         }
     }
