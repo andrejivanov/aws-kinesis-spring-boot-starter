@@ -16,18 +16,29 @@ class StreamInitializer(
     private val activeStreams = mutableListOf<String>()
 
     fun createStreamIfMissing(streamName: String, shardCount: Int = 1) {
+        // TODO I feel like the method name <createStreamIfMissing> implies that
+        //      the setting was already checked.
         if (kinesisSettings.createStreams && !activeStreams.contains(streamName)) {
             try {
                 val response = kinesis.describeStream(streamName)
                 if (!streamIsActive(response)) {
                     waitForStreamToBecomeActive(streamName)
                 }
+                activeStreams.add(streamName)
             } catch (ex: ResourceNotFoundException) {
-                log.info("Creating stream [{}]", streamName)
-                kinesis.createStream(streamName, shardCount)
-                waitForStreamToBecomeActive(streamName)
+                // Only one thread can create a stream at a time. Therefore, it is
+                // *not* support to create streams with different names at the same time.
+                // Unnecessary calls from concurrent threads to #waitForStreamToBecomeActive
+                // are avoided.
+                synchronized(this) {
+                    if (streamName !in activeStreams) {
+                        log.info("Creating stream [{}]", streamName)
+                        kinesis.createStream(streamName, shardCount)
+                        waitForStreamToBecomeActive(streamName)
+                        activeStreams.add(streamName)
+                    }
+                }
             }
-            activeStreams.add(streamName)
             log.info("Stream [{}] is active.", streamName)
         }
     }
