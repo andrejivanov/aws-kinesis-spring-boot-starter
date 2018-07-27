@@ -79,9 +79,9 @@ dependencies {
     compile "com.amazonaws:aws-java-sdk-sts:${versions.awsSdk}"
     compile "com.amazonaws:amazon-kinesis-client:${versions.kinesis}"
     compile "org.slf4j:slf4j-api:1.7.25"
-    compile "javax.validation:validation-api:2.0.0.Final"
+    compile "javax.validation:validation-api:2.0.1.Final"
 
-    testCompile "org.hibernate:hibernate-validator:6.0.8.Final"
+    testCompile "org.hibernate:hibernate-validator:6.0.11.Final"
     testCompile "org.springframework.boot:spring-boot-starter-test:1.5.8.RELEASE"
     testCompile "commons-logging:commons-logging"
     testCompile "com.nhaarman:mockito-kotlin:1.5.0"

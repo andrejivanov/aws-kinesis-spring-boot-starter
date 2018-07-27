@@ -9,6 +9,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import javax.validation.Validator
 
 @Configuration
 @AutoConfigureAfter(name = ["org.springframework.boot.autoconfigure.jackson.JacksonAutoConfiguration"])
@@ -75,9 +76,10 @@ class AwsKinesisAutoConfiguration {
     fun kinesisOutboundGateway(
         kinesisClientProvider: KinesisClientProvider,
         requestFactory: RequestFactory,
-        streamInitializer: StreamInitializer
+        streamInitializer: StreamInitializer,
+        validator: Validator? = null
     ): AwsKinesisOutboundGateway {
-        return AwsKinesisOutboundGateway(kinesisClientProvider, requestFactory, streamInitializer)
+        return AwsKinesisOutboundGateway(kinesisClientProvider, requestFactory, streamInitializer, validator)
     }
 
     @Bean
