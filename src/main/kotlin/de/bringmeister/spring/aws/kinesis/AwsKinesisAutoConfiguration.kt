@@ -3,6 +3,7 @@ package de.bringmeister.spring.aws.kinesis
 import com.amazonaws.auth.AWSCredentialsProvider
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain
 import com.fasterxml.jackson.databind.ObjectMapper
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.AutoConfigureAfter
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
@@ -57,8 +58,12 @@ class AwsKinesisAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     @ConditionalOnBean(ObjectMapper::class)
-    fun workerFactory(clientConfigFactory: ClientConfigFactory, recordMapper: RecordMapper, settings: AwsKinesisSettings) =
-        WorkerFactory(clientConfigFactory, recordMapper, settings)
+    fun workerFactory(
+        clientConfigFactory: ClientConfigFactory,
+        recordMapper: RecordMapper,
+        settings: AwsKinesisSettings,
+        @Autowired(required = false) validator: Validator?
+    ) = WorkerFactory(clientConfigFactory, recordMapper, settings, validator)
 
     @Bean
     @ConditionalOnMissingBean
@@ -78,9 +83,9 @@ class AwsKinesisAutoConfiguration {
         kinesisClientProvider: KinesisClientProvider,
         requestFactory: RequestFactory,
         streamInitializer: StreamInitializer,
-        validator: Optional<Validator> = Optional.empty()
+        @Autowired(required = false) validator: Validator?
     ): AwsKinesisOutboundGateway {
-        return AwsKinesisOutboundGateway(kinesisClientProvider, requestFactory, streamInitializer, validator.orElse(null))
+        return AwsKinesisOutboundGateway(kinesisClientProvider, requestFactory, streamInitializer, validator)
     }
 
     @Bean
