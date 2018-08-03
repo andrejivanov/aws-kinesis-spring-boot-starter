@@ -30,7 +30,7 @@ class AwsKinesisRecordProcessor(
     override fun initialize(initializationInput: InitializationInput?) {
         val workerInitializedEvent = WorkerInitializedEvent(handler.stream, initializationInput!!.shardId)
         publisher.publishEvent(workerInitializedEvent)
-        log.info("Sent initializing ready event [{}]", workerInitializedEvent)
+        log.info("Kinesis listener initialized: [stream={}, shardId={}]", handler.stream, initializationInput.shardId)
     }
 
     override fun processRecords(processRecordsInput: ProcessRecordsInput?) {
@@ -56,7 +56,6 @@ class AwsKinesisRecordProcessor(
 
             for (attempt in 1..maxAttempts) {
                 try {
-
                     handler.invoke(record.data, record.metadata)
                     return
                 } catch (e: Exception) {
